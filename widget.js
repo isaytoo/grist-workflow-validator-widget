@@ -637,22 +637,41 @@ async function detectUserRole() {
 
 async function getUserEmail() {
   try {
-    // Get user info from Grist
-    const user = await grist.user;
-    if (user && user.Email) {
-      return user.Email;
+    // Method 1: Try to get from WF_UserRoles table if user has configured it
+    try {
+      const userRolesData = await grist.docApi.fetchTable(USER_ROLES_TABLE);
+      const records = parseTableData(userRolesData);
+      if (records.length > 0 && records[0].Email) {
+        return records[0].Email;
+      }
+    } catch (e) {
+      console.log('Could not get email from UserRoles:', e);
     }
     
-    // Fallback: try to get from access token
+    // Method 2: Use REST API with access token (respects View As mode)
     try {
-      const accessToken = await grist.docApi.getAccessToken({ readOnly: true });
-      // Access token contains user info but we can't decode it here
-      // Return a generic email for now
-      return 'user@example.com';
+      const token = await grist.docApi.getAccessToken({ readOnly: true });
+      const docId = await grist.docApi.getDocName();
+      
+      // Fetch current session info via REST API
+      const response = await fetch(`https://docs.getgrist.com/api/docs/${docId}/access`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.users && data.users.length > 0) {
+          return data.users[0].email || 'user@example.com';
+        }
+      }
     } catch (e) {
-      console.log('Could not get access token:', e);
-      return 'user@example.com';
+      console.log('Could not get email from REST API:', e);
     }
+    
+    // Fallback: return placeholder
+    return 'user@example.com';
     
   } catch (error) {
     console.error('Error getting user email:', error);
