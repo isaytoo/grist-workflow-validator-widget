@@ -1653,8 +1653,8 @@ function renderStats() {
   let avgDelay = 0;
   if (completedRequests.length > 0) {
     const totalDelay = completedRequests.reduce((sum, r) => {
-      if (r.created_at && r.completed_at) {
-        const delay = new Date(r.completed_at) - new Date(r.created_at);
+      if (r.Created_At && r.Completed_At) {
+        const delay = new Date(r.Completed_At) - new Date(r.Created_At);
         return sum + delay;
       }
       return sum;
