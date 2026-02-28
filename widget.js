@@ -610,22 +610,44 @@ async function init() {
 // User Role Detection (using the proven method)
 async function detectUserRole() {
   try {
-    // Step 1: Get user email via helper table with trigger formula
+    // Step 1: Get user email
     const userEmail = await getUserEmail();
     state.userEmail = userEmail;
-    state.currentUser = userEmail;
     
-    // Step 2: Detect if Owner (try structure modification)
-    const isOwner = await detectOwner();
-    
-    if (isOwner) {
-      state.userRole = 'Owner';
-    } else {
-      // Step 3: Detect Editor vs Viewer (try empty write)
-      const isEditor = await detectEditor();
-      state.userRole = isEditor ? 'Editor' : 'Viewer';
+    // Step 2: Check if role is configured in WF_UserRoles table
+    try {
+      const userRolesData = await grist.docApi.fetchTable(USER_ROLES_TABLE);
+      const records = parseTableData(userRolesData);
+      
+      // Find role for current user
+      const userRole = records.find(r => r.Email === userEmail);
+      if (userRole && userRole.Role) {
+        state.userRole = userRole.Role;
+        console.log(`Role found in WF_UserRoles: ${userRole.Role}`);
+        updateUserDisplay();
+        return;
+      }
+    } catch (e) {
+      console.log('Could not get role from WF_UserRoles, falling back to permission detection:', e);
     }
     
+    // Step 3: Fallback - Detect role by testing permissions
+    const isOwner = await detectOwner();
+    if (isOwner) {
+      state.userRole = 'Owner';
+      updateUserDisplay();
+      return;
+    }
+    
+    const isEditor = await detectEditor();
+    if (isEditor) {
+      state.userRole = 'Editor';
+      updateUserDisplay();
+      return;
+    }
+    
+    // If neither Owner nor Editor, must be Viewer
+    state.userRole = 'Viewer';
     updateUserDisplay();
     
   } catch (error) {
