@@ -927,35 +927,57 @@ function renderRequestsList() {
     return;
   }
   
-  container.innerHTML = filteredRequests.map(request => `
+  // Separate valid and invalid requests
+  const validRequests = filteredRequests.filter(r => r.Title && r.Type);
+  const invalidRequests = filteredRequests.filter(r => !r.Title || !r.Type);
+  
+  let html = '';
+  
+  // Show warning for invalid requests
+  if (invalidRequests.length > 0) {
+    html += `
+      <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+        <strong>⚠️ ${invalidRequests.length} demande(s) invalide(s) détectée(s)</strong>
+        <p style="margin: 8px 0 0 0; font-size: 0.9em;">
+          Ces demandes ont été créées sans workflow configuré. 
+          Ouvrez la table <strong>WF_Requests</strong> et supprimez les lignes avec "Sans titre" ou Type vide.
+        </p>
+      </div>
+    `;
+  }
+  
+  // Render valid requests
+  html += validRequests.map(request => `
     <div class="request-card" onclick="openRequestDetails(${request.id})">
       <div class="request-card-header">
         <div>
-          <div class="request-title">${escapeHtml(request.title || 'Sans titre')}</div>
-          <div class="request-type">${escapeHtml(request.type || 'Type non défini')}</div>
+          <div class="request-title">${escapeHtml(request.Title)}</div>
+          <div class="request-type">${escapeHtml(request.Type)}</div>
         </div>
-        <span class="request-status status-${request.status || 'pending'}">
-          ${getStatusLabel(request.status)}
+        <span class="request-status status-${request.Status || 'pending'}">
+          ${getStatusLabel(request.Status)}
         </span>
       </div>
       <div class="request-meta">
         <div class="request-meta-item">
           <span>👤</span>
-          <span>${escapeHtml(request.requester || 'Inconnu')}</span>
+          <span>${escapeHtml(request.Requester || 'Inconnu')}</span>
         </div>
         <div class="request-meta-item">
           <span>📅</span>
-          <span>${formatDate(request.created_at)}</span>
+          <span>${formatDate(request.Created_At)}</span>
         </div>
-        ${request.current_step ? `
+        ${request.Current_Step ? `
           <div class="request-meta-item">
             <span>⏳</span>
-            <span>${escapeHtml(request.current_step)}</span>
+            <span>${escapeHtml(request.Current_Step)}</span>
           </div>
         ` : ''}
       </div>
     </div>
   `).join('');
+  
+  container.innerHTML = html;
 }
 
 // Workflow management functions
