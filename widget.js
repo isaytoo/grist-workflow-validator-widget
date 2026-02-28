@@ -159,15 +159,17 @@ const state = {
 };
 
 // Initialize widget
-grist.ready({
-  requiredAccess: 'full'
-});
-
-grist.onRecords(async function(records) {
-  console.log('Records received:', records);
+(async function() {
+  await grist.ready({ requiredAccess: 'full' });
+  
+  console.log('Grist ready, starting auto-setup...');
+  
+  // Auto-create tables if needed
   await ensureTablesExist();
+  
+  // Initialize the widget
   await init();
-});
+})();
 
 // Auto-setup: Create required tables if they don't exist
 async function ensureTablesExist() {
