@@ -1093,12 +1093,16 @@ function openNewRequestModal() {
   const modal = document.getElementById('modalNewRequest');
   const typeSelect = document.getElementById('requestType');
   
-  // Populate workflow types
-  if (typeSelect) {
-    typeSelect.innerHTML = state.workflowTypes.map(type => 
-      `<option value="${escapeHtml(type.name)}">${escapeHtml(type.name)}</option>`
-    ).join('');
+  // Check if workflows are configured
+  if (state.workflowTypes.length === 0) {
+    showError(t('noWorkflowsConfigured') || 'Aucun workflow configuré. Allez dans l\'onglet Configuration pour créer un type de workflow.');
+    return;
   }
+  
+  // Populate workflow types
+  typeSelect.innerHTML = state.workflowTypes.map(type => 
+    `<option value="${escapeHtml(type.name)}">${escapeHtml(type.name)}</option>`
+  ).join('');
   
   modal.classList.add('active');
 }
