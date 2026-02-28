@@ -8,7 +8,7 @@
 console.log('Workflow Validator Widget: Script loaded');
 
 // Language support
-let currentLang = 'en';
+let currentLang = 'fr';
 
 const i18n = {
   en: {
@@ -209,8 +209,8 @@ const state = {
   try {
     console.log('Workflow Validator: Starting initialization...');
     
-    // Load saved language preference
-    const savedLang = localStorage.getItem('wf-lang') || 'en';
+    // Load saved language preference (default to French)
+    const savedLang = localStorage.getItem('wf-lang') || 'fr';
     currentLang = savedLang;
     document.getElementById('langSelector').value = savedLang;
     
@@ -251,12 +251,14 @@ const state = {
 async function ensureTablesExist() {
   try {
     const existingTables = await grist.docApi.listTables();
+    let tablesCreated = false;
     
     console.log('Existing tables:', existingTables);
     
     // Create Requests table
     if (existingTables.indexOf(REQUESTS_TABLE) === -1) {
       console.log('Creating Requests table...');
+      tablesCreated = true;
       await grist.docApi.applyUserActions([
         ['AddTable', REQUESTS_TABLE, [
           { id: 'Type', type: 'Text' },
@@ -276,6 +278,7 @@ async function ensureTablesExist() {
     // Create WorkflowSteps table
     if (existingTables.indexOf(WORKFLOW_STEPS_TABLE) === -1) {
       console.log('Creating WorkflowSteps table...');
+      tablesCreated = true;
       await grist.docApi.applyUserActions([
         ['AddTable', WORKFLOW_STEPS_TABLE, [
           { id: 'Workflow_Type', type: 'Text' },
@@ -293,6 +296,7 @@ async function ensureTablesExist() {
     // Create ValidationLog table
     if (existingTables.indexOf(VALIDATION_LOG_TABLE) === -1) {
       console.log('Creating ValidationLog table...');
+      tablesCreated = true;
       await grist.docApi.applyUserActions([
         ['AddTable', VALIDATION_LOG_TABLE, [
           { id: 'Request_Id', type: 'Ref:' + REQUESTS_TABLE },
@@ -309,6 +313,7 @@ async function ensureTablesExist() {
     // Create Delegations table (optional)
     if (existingTables.indexOf(DELEGATIONS_TABLE) === -1) {
       console.log('Creating Delegations table...');
+      tablesCreated = true;
       await grist.docApi.applyUserActions([
         ['AddTable', DELEGATIONS_TABLE, [
           { id: 'Delegator', type: 'Text' },
@@ -324,6 +329,7 @@ async function ensureTablesExist() {
     // Create UserRoles table (optional)
     if (existingTables.indexOf(USER_ROLES_TABLE) === -1) {
       console.log('Creating UserRoles table...');
+      tablesCreated = true;
       await grist.docApi.applyUserActions([
         ['AddTable', USER_ROLES_TABLE, [
           { id: 'Email', type: 'Text' },
@@ -344,7 +350,11 @@ async function ensureTablesExist() {
     };
     
     console.log('Tables setup complete');
-    showSuccess(t('tablesCreated'));
+    
+    // Only show success message if tables were actually created
+    if (tablesCreated) {
+      showSuccess(t('tablesCreated'));
+    }
     
   } catch (error) {
     console.error('Error ensuring tables exist:', error);
