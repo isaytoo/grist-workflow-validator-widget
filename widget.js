@@ -870,7 +870,14 @@ function setupEventListeners() {
   // New request button
   const btnNewRequest = document.getElementById('btnNewRequest');
   if (btnNewRequest) {
-    btnNewRequest.addEventListener('click', openNewRequestModal);
+    btnNewRequest.addEventListener('click', () => {
+      if (state.workflowTypes.length === 0) {
+        showError('Veuillez d\'abord créer un workflow dans l\'onglet Configuration');
+        switchTab('workflow');
+      } else {
+        openNewRequestModal();
+      }
+    });
   }
   
   // Modal close buttons
@@ -976,11 +983,24 @@ function renderRequestsList() {
   }
   
   if (filteredRequests.length === 0) {
+    // Check if workflows exist
+    const hasWorkflows = state.workflowTypes.length > 0;
+    
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📋</div>
         <div class="empty-state-title">Aucune demande</div>
-        <p>Créez votre première demande pour commencer</p>
+        ${hasWorkflows ? `
+          <p>Créez votre première demande pour commencer</p>
+          <button onclick="openNewRequestModal()" class="btn btn-primary" style="margin-top: 16px;">
+            ➕ Nouvelle demande
+          </button>
+        ` : `
+          <p style="color: var(--text-secondary); margin-bottom: 16px;">Avant de créer une demande, vous devez d'abord configurer un workflow.</p>
+          <button onclick="switchTab('workflow')" class="btn btn-primary" style="margin-top: 8px;">
+            ⚙️ Aller dans Configuration
+          </button>
+        `}
       </div>
     `;
     return;
@@ -1406,31 +1426,29 @@ function renderWorkflowConfig() {
   typesList.innerHTML = state.workflowTypes.map(type => `
     <div class="workflow-type-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 20px; position: relative; overflow: hidden; cursor: pointer;" onclick="selectWorkflowForDisplay('${escapeHtml(type.name)}')">
       <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.1;">⚙️</div>
+      <div style="position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; gap: 8px;">
+        <button class="btn" onclick="event.stopPropagation(); editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; white-space: nowrap;">
+          ✏️ ${t('modify')}
+        </button>
+        <button class="btn" onclick="event.stopPropagation(); viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; white-space: nowrap;">
+          👁️ Voir les étapes
+        </button>
+      </div>
       <div style="position: relative; z-index: 1;">
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 2em;">📋</span>
-            <div>
-              <div class="workflow-title" style="font-size: 1.3em; font-weight: 700; color: white;">${escapeHtml(type.name)}</div>
-              <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
-                <span style="display: flex; align-items: center; gap: 6px;">
-                  <span>🔢</span>
-                  <span>${type.steps.length} ${type.steps.length > 1 ? 'étapes' : 'étape'}</span>
-                </span>
-                <span style="display: flex; align-items: center; gap: 6px;">
-                  <span>⏱️</span>
-                  <span>${type.steps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)}h SLA total</span>
-                </span>
-              </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding-right: 280px;">
+          <span style="font-size: 2em;">📋</span>
+          <div>
+            <div class="workflow-title" style="font-size: 1.3em; font-weight: 700; color: white;">${escapeHtml(type.name)}</div>
+            <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span>🔢</span>
+                <span>${type.steps.length} ${type.steps.length > 1 ? 'étapes' : 'étape'}</span>
+              </span>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span>⏱️</span>
+                <span>${type.steps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)}h SLA total</span>
+              </span>
             </div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn" onclick="event.stopPropagation(); editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; white-space: nowrap;">
-              ✏️ ${t('modify')}
-            </button>
-            <button class="btn" onclick="event.stopPropagation(); viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; white-space: nowrap;">
-              👁️ Voir les étapes
-            </button>
           </div>
         </div>
       </div>
