@@ -779,11 +779,26 @@ function parseTableData(tableData) {
   const records = [];
   const { id, ...columns } = tableData;
   
+  if (!id || id.length === 0) return records;
+  
   for (let i = 0; i < id.length; i++) {
     const record = { id: id[i] };
-    for (const [key, values] of Object.entries(columns)) {
-      record[key] = values[i];
+    
+    for (const [colName, colValues] of Object.entries(columns)) {
+      let value = colValues[i];
+      
+      // Convert Grist timestamps (seconds since epoch) to JavaScript Date
+      // Grist DateTime columns return Unix timestamps in seconds
+      if (colName.includes('_At') || colName.includes('Timestamp')) {
+        if (typeof value === 'number' && value > 0) {
+          // Grist uses seconds, JavaScript uses milliseconds
+          value = new Date(value * 1000).toISOString();
+        }
+      }
+      
+      record[colName] = value;
     }
+    
     records.push(record);
   }
   
