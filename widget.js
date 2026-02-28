@@ -412,17 +412,17 @@ const USER_ROLES_TABLE = 'WF_UserRoles';
 const state = {
   userEmail: null,
   userRole: null,
-  currentUser: null,
   requests: [],
   workflowTypes: [],
   auditLog: [],
+  delegations: [],
   selectedRequest: null,
   mappedColumns: {
-    requests: null,
-    workflowSteps: null,
-    validationLog: null,
-    delegations: null,
-    userRoles: null
+    requests: REQUESTS_TABLE,
+    workflowSteps: WORKFLOW_STEPS_TABLE,
+    validationLog: VALIDATION_LOG_TABLE,
+    delegations: DELEGATIONS_TABLE,
+    userRoles: USER_ROLES_TABLE
   }
 };
 
@@ -760,6 +760,15 @@ async function loadData() {
       state.auditLog = parseTableData(logData);
     }
     
+    // Load delegations
+    try {
+      const delegationsData = await grist.docApi.fetchTable(DELEGATIONS_TABLE);
+      state.delegations = parseTableData(delegationsData);
+    } catch (e) {
+      console.log('Could not load delegations:', e);
+      state.delegations = [];
+    }
+    
   } catch (error) {
     console.error('Error loading data:', error);
     throw error;
@@ -797,6 +806,56 @@ function parseWorkflowTypes(stepsData) {
   });
   
   return Object.values(types);
+}
+
+// Check if current user is a delegate for a given email
+function getActiveDelegation(validatorEmail, workflowType = null) {
+  const now = new Date();
+  
+  return state.delegations.find(delegation => {
+    // Check if delegation is for this validator
+    if (delegation.Delegator !== validatorEmail) return false;
+    
+    // Check if delegation is for current user
+    if (delegation.Delegate !== state.userEmail) return false;
+    
+    // Check if delegation is active
+    if (delegation.Is_Active === false) return false;
+    
+    // Check workflow type if specified
+    if (workflowType && delegation.Workflow_Type && delegation.Workflow_Type !== workflowType) {
+      return false;
+    }
+    
+    // Check date range
+    const startDate = delegation.Start_Date ? new Date(delegation.Start_Date) : null;
+    const endDate = delegation.End_Date ? new Date(delegation.End_Date) : null;
+    
+    if (startDate && now < startDate) return false;
+    if (endDate && now > endDate) return false;
+    
+    return true;
+  });
+}
+
+// Check if current user can validate (either directly or via delegation)
+function canUserValidate(validatorEmail, workflowType = null) {
+  // Direct validation
+  if (validatorEmail === state.userEmail) {
+    return { canValidate: true, isDelegation: false };
+  }
+  
+  // Check delegation
+  const delegation = getActiveDelegation(validatorEmail, workflowType);
+  if (delegation) {
+    return { 
+      canValidate: true, 
+      isDelegation: true, 
+      delegator: delegation.Delegator 
+    };
+  }
+  
+  return { canValidate: false };
 }
 
 // Event Listeners
@@ -1422,9 +1481,43 @@ function renderValidationActions(request, container) {
     return;
   }
   
+  // Get current workflow step to check validator
+  const workflow = state.workflowTypes.find(w => w.name === request.Type);
+  if (!workflow) {
+    container.innerHTML = `<p class="no-permission">Workflow non trouvé</p>`;
+    return;
+  }
+  
+  // Find current step (simplified - assumes step 1 for now)
+  const currentStep = workflow.steps.find(s => s.Step_Number === 1);
+  if (!currentStep) {
+    container.innerHTML = `<p class="no-permission">Étape de validation non trouvée</p>`;
+    return;
+  }
+  
+  // Check if user can validate (directly or via delegation)
+  const validationCheck = canUserValidate(currentStep.Validator_Email, request.Type);
+  
+  if (!validationCheck.canValidate) {
+    container.innerHTML = `<p class="no-permission">${t('noPermission')}</p>`;
+    return;
+  }
+  
+  // Show delegation info if applicable
+  const delegationBanner = validationCheck.isDelegation ? `
+    <div style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 1.5em;">🔄</span>
+      <div>
+        <div style="font-weight: 600;">Délégation active</div>
+        <div style="font-size: 0.9em; opacity: 0.9;">Vous validez au nom de ${escapeHtml(validationCheck.delegator)}</div>
+      </div>
+    </div>
+  ` : '';
+  
   container.innerHTML = `
     <div class="validation-form">
       <h3>✍️ ${t('validationActions')}</h3>
+      ${delegationBanner}
       <div class="form-group">
         <label for="validationComment" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
           <span style="font-size: 1.1em;">💬</span>
@@ -1454,6 +1547,9 @@ function renderValidationActions(request, container) {
       </div>
     </div>
   `;
+  
+  // Store delegation info for later use
+  state.currentDelegation = validationCheck.isDelegation ? validationCheck : null;
 }
 
 async function handleValidation(action) {
@@ -1475,13 +1571,19 @@ async function handleValidation(action) {
       }]
     ]);
     
+    // Prepare description with delegation info
+    let description = `Demande ${action === 'approve' ? 'approuvée' : 'rejetée'}`;
+    if (state.currentDelegation && state.currentDelegation.isDelegation) {
+      description += ` (délégation de ${state.currentDelegation.delegator})`;
+    }
+    
     // Add validation log entry
     await grist.docApi.applyUserActions([
       ['AddRecord', VALIDATION_LOG_TABLE, null, {
         Request_Id: request.id,
         User: state.userEmail,
         Action: action,
-        Description: `Demande ${action === 'approve' ? 'approuvée' : 'rejetée'}`,
+        Description: description,
         Comment: comment
       }]
     ]);
