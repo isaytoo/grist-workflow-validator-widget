@@ -5,6 +5,8 @@
  * https://github.com/isaytoo/grist-workflow-validator-widget
  */
 
+console.log('Workflow Validator Widget: Script loaded');
+
 // Language support
 let currentLang = 'en';
 
@@ -160,15 +162,32 @@ const state = {
 
 // Initialize widget
 (async function() {
-  await grist.ready({ requiredAccess: 'full' });
-  
-  console.log('Grist ready, starting auto-setup...');
-  
-  // Auto-create tables if needed
-  await ensureTablesExist();
-  
-  // Initialize the widget
-  await init();
+  try {
+    console.log('Workflow Validator: Starting initialization...');
+    
+    await grist.ready({ requiredAccess: 'full' });
+    
+    console.log('Grist ready, starting auto-setup...');
+    
+    // Auto-create tables if needed
+    await ensureTablesExist();
+    
+    console.log('Tables ensured, initializing widget...');
+    
+    // Initialize the widget
+    await init();
+    
+    console.log('Widget initialized successfully!');
+  } catch (error) {
+    console.error('FATAL ERROR during widget initialization:', error);
+    document.body.innerHTML = `
+      <div style="padding: 20px; font-family: sans-serif;">
+        <h2 style="color: #ef4444;">Error Loading Widget</h2>
+        <p><strong>Error:</strong> ${error.message}</p>
+        <pre style="background: #f3f4f6; padding: 10px; border-radius: 4px; overflow: auto;">${error.stack}</pre>
+      </div>
+    `;
+  }
 })();
 
 // Auto-setup: Create required tables if they don't exist
