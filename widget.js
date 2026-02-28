@@ -1066,6 +1066,63 @@ function editWorkflowType(typeName) {
   showInfo(`Pour modifier le workflow "${typeName}", allez dans la table WF_Steps et modifiez les lignes correspondantes.`);
 }
 
+window.viewWorkflowSteps = function(typeName) {
+  const workflow = state.workflowTypes.find(w => w.name === typeName);
+  if (!workflow) return;
+  
+  const stepsHtml = workflow.steps
+    .sort((a, b) => a.Step_Number - b.Step_Number)
+    .map(step => `
+      <div style="padding: 16px; background: var(--bg-secondary); border-radius: 10px; border-left: 4px solid var(--primary); margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+          <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">${step.Step_Number}</span>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; font-size: 1.1em;">${escapeHtml(step.Step_Name)}</div>
+            <div style="font-size: 0.9em; color: var(--text-secondary); margin-top: 4px;">
+              👤 ${escapeHtml(step.Validator_Role || 'N/A')} • 📧 ${escapeHtml(step.Validator_Email)}
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; font-size: 0.85em; color: var(--text-secondary); margin-top: 8px;">
+          <span>⏱️ SLA: ${step.SLA_Hours}h</span>
+          ${step.Is_Parallel ? '<span>🔀 Parallèle</span>' : '<span>➡️ Séquentiel</span>'}
+          ${step.Condition ? `<span>🎯 Condition: ${escapeHtml(step.Condition)}</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  
+  const modalHtml = `
+    <div id="modalWorkflowSteps" class="modal active">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>📋 ${escapeHtml(typeName)}</h2>
+          <button class="modal-close" onclick="closeWorkflowStepsModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 20px; padding: 16px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 10px;">
+            <div style="font-size: 0.9em; color: var(--text-secondary);">
+              Ce workflow comporte <strong>${workflow.steps.length} étape(s)</strong> de validation avec un SLA total de <strong>${workflow.steps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)} heures</strong>.
+            </div>
+          </div>
+          ${stepsHtml}
+          <div style="margin-top: 20px; padding: 12px; background: #fef3c7; border-radius: 8px; font-size: 0.9em;">
+            💡 Pour modifier ces étapes, allez dans la table <strong>WF_Steps</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = modalHtml;
+  document.body.appendChild(tempDiv.firstElementChild);
+}
+
+window.closeWorkflowStepsModal = function() {
+  const modal = document.getElementById('modalWorkflowSteps');
+  if (modal) modal.remove();
+}
+
 // Render workflow configuration
 function renderWorkflowConfig() {
   const typesList = document.getElementById('workflowTypesList');
@@ -1083,15 +1140,33 @@ function renderWorkflowConfig() {
   }
   
   typesList.innerHTML = state.workflowTypes.map(type => `
-    <div class="workflow-type-card">
-      <div>
-        <div class="workflow-title">${escapeHtml(type.name)}</div>
-        <div class="workflow-meta">${type.steps.length} ${t('steps')}</div>
-      </div>
-      <div>
-        <button class="btn btn-secondary" onclick="editWorkflowType('${escapeHtml(type.name)}')">
-          ${t('modify')}
-        </button>
+    <div class="workflow-type-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 20px; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.1;">⚙️</div>
+      <div style="position: relative; z-index: 1;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span style="font-size: 2em;">📋</span>
+          <div>
+            <div class="workflow-title" style="font-size: 1.3em; font-weight: 700; color: white;">${escapeHtml(type.name)}</div>
+            <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span>🔢</span>
+                <span>${type.steps.length} ${type.steps.length > 1 ? 'étapes' : 'étape'}</span>
+              </span>
+              <span style="display: flex; align-items: center; gap: 6px;">
+                <span>⏱️</span>
+                <span>${type.steps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)}h SLA total</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+          <button class="btn" onclick="editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
+            ✏️ ${t('modify')}
+          </button>
+          <button class="btn" onclick="viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
+            👁️ Voir les étapes
+          </button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -1113,14 +1188,42 @@ function renderAuditLog() {
     return;
   }
   
-  container.innerHTML = state.auditLog.map(entry => `
-    <div class="audit-entry">
-      <div class="audit-timestamp">${formatDateTime(entry.timestamp)}</div>
-      <div class="audit-action">
-        <span class="audit-user">${escapeHtml(entry.user || 'Système')}</span>
-        ${escapeHtml(entry.action || 'Action inconnue')}
-        ${entry.details ? `<div class="audit-details">${escapeHtml(entry.details)}</div>` : ''}
+  // Group by date
+  const groupedByDate = {};
+  state.auditLog.forEach(entry => {
+    const date = entry.Timestamp ? new Date(entry.Timestamp).toLocaleDateString('fr-FR') : 'Date inconnue';
+    if (!groupedByDate[date]) groupedByDate[date] = [];
+    groupedByDate[date].push(entry);
+  });
+  
+  container.innerHTML = Object.entries(groupedByDate).map(([date, entries]) => `
+    <div style="margin-bottom: 32px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border);">
+        <span style="font-size: 1.2em;">📅</span>
+        <span style="font-weight: 600; color: var(--text-primary);">${date}</span>
+        <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">${entries.length}</span>
       </div>
+      ${entries.map(entry => `
+        <div style="display: flex; gap: 16px; padding: 16px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 12px; transition: all 0.2s;" onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)'" onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none'">
+          <div style="font-size: 1.8em; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: white; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            ${getActionIcon(entry.Action)}
+          </div>
+          <div style="flex: 1;">
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+              ${escapeHtml(entry.Description || entry.Action || 'Action inconnue')}
+            </div>
+            <div style="font-size: 0.85em; color: var(--text-secondary); display: flex; align-items: center; gap: 12px;">
+              <span>👤 ${escapeHtml(entry.User || 'Système')}</span>
+              <span>🕐 ${formatDateTime(entry.Timestamp)}</span>
+            </div>
+            ${entry.Comment ? `
+              <div style="margin-top: 8px; padding: 12px; background: white; border-radius: 8px; font-size: 0.9em; border-left: 3px solid var(--primary);">
+                💬 ${escapeHtml(entry.Comment)}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `).join('')}
     </div>
   `).join('');
 }
@@ -1319,17 +1422,32 @@ function renderValidationActions(request, container) {
   
   container.innerHTML = `
     <div class="validation-form">
-      <h3>${t('validationActions')}</h3>
+      <h3>✍️ ${t('validationActions')}</h3>
       <div class="form-group">
-        <label for="validationComment">${t('comment')}</label>
-        <textarea id="validationComment" rows="3" placeholder="${t('comment')}..."></textarea>
+        <label for="validationComment" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+          <span style="font-size: 1.1em;">💬</span>
+          <span>${t('comment')}</span>
+        </label>
+        <textarea 
+          id="validationComment" 
+          rows="4" 
+          placeholder="Ajoutez un commentaire pour expliquer votre décision..."
+          style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 0.95em; font-family: inherit; resize: vertical; transition: all 0.2s;"
+          onfocus="this.style.borderColor='var(--primary)'; this.style.boxShadow='0 0 0 3px rgba(102, 126, 234, 0.1)'"
+          onblur="this.style.borderColor='var(--border)'; this.style.boxShadow='none'"
+        ></textarea>
+        <div style="font-size: 0.85em; color: var(--text-secondary); margin-top: 6px;">
+          💡 Un commentaire détaillé aide à la traçabilité des décisions
+        </div>
       </div>
       <div class="validation-buttons">
-        <button class="btn btn-danger" onclick="handleValidation('reject')">
-          ❌ ${t('reject')}
+        <button class="btn btn-danger" onclick="handleValidation('reject')" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span style="font-size: 1.2em;">❌</span>
+          <span>${t('reject')}</span>
         </button>
-        <button class="btn btn-success" onclick="handleValidation('approve')">
-          ✅ ${t('approve')}
+        <button class="btn btn-success" onclick="handleValidation('approve')" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <span style="font-size: 1.2em;">✅</span>
+          <span>${t('approve')}</span>
         </button>
       </div>
     </div>
