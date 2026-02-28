@@ -695,6 +695,121 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* Guide Styles */
+.guide-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  background: var(--bg-primary);
+}
+
+.guide-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid var(--border);
+}
+
+.guide-header h1 {
+  color: var(--primary);
+  margin-bottom: 12px;
+  font-size: 2em;
+}
+
+.guide-intro {
+  color: var(--text-secondary);
+  font-size: 1.1em;
+}
+
+.guide-section-item {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.guide-section-item h2 {
+  color: var(--primary);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--bg-tertiary);
+  font-size: 1.5em;
+}
+
+.guide-section-item h3 {
+  color: var(--text-primary);
+  margin-top: 20px;
+  margin-bottom: 12px;
+  font-size: 1.2em;
+}
+
+.guide-section-item p {
+  line-height: 1.6;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.guide-section-item ul,
+.guide-section-item ol {
+  margin-left: 24px;
+  margin-bottom: 16px;
+  line-height: 1.8;
+}
+
+.guide-section-item li {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.guide-section-item code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+  color: var(--primary);
+}
+
+.guide-section-item a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.guide-section-item a:hover {
+  text-decoration: underline;
+}
+
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 0.9em;
+}
+
+.guide-table th,
+.guide-table td {
+  border: 1px solid var(--border);
+  padding: 10px;
+  text-align: left;
+}
+
+.guide-table th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.guide-table tr:nth-child(even) {
+  background: var(--bg-secondary);
+}
+
+.guide-table tr:hover {
+  background: var(--bg-tertiary);
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

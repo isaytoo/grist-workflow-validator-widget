@@ -18,6 +18,7 @@ const i18n = {
     tabWorkflow: 'Configuration',
     tabHistory: 'History',
     tabStats: 'Statistics',
+    tabGuide: '📖 Guide',
     newRequest: 'New Request',
     allStatuses: 'All statuses',
     allTypes: 'All types',
@@ -68,7 +69,94 @@ const i18n = {
     modify: 'Modify',
     tablesCreated: 'Tables created automatically',
     autoSetup: 'Auto-setup in progress...',
-    setupComplete: 'Setup complete!'
+    setupComplete: 'Setup complete!',
+    guideTitle: 'User Guide - Workflow Validator',
+    guideIntro: 'Complete guide to use the Workflow Validator widget',
+    guideQuickStart: 'Quick Start',
+    guideQuickStartContent: `
+      <h3>Installation (Already done! ✅)</h3>
+      <p>The widget is already installed and the 5 required tables have been created automatically:</p>
+      <ul>
+        <li><strong>WF_Requests</strong> - Validation requests</li>
+        <li><strong>WF_Steps</strong> - Workflow configuration</li>
+        <li><strong>WF_ValidationLog</strong> - Audit trail</li>
+        <li><strong>WF_Delegations</strong> - Delegation management</li>
+        <li><strong>WF_UserRoles</strong> - User roles</li>
+      </ul>
+    `,
+    guideWorkflow: 'Configure a Workflow',
+    guideWorkflowContent: `
+      <h3>Example: Expense Report (3 levels)</h3>
+      <p>Go to the <strong>WF_Steps</strong> table and add these rows:</p>
+      <table class="guide-table">
+        <tr><th>Workflow_Type</th><th>Step_Number</th><th>Step_Name</th><th>Validator_Email</th><th>SLA_Hours</th><th>Condition</th></tr>
+        <tr><td>Expense Report</td><td>1</td><td>Manager</td><td>manager@company.com</td><td>48</td><td></td></tr>
+        <tr><td>Expense Report</td><td>2</td><td>Finance</td><td>finance@company.com</td><td>72</td><td>amount > 500</td></tr>
+        <tr><td>Expense Report</td><td>3</td><td>CEO</td><td>ceo@company.com</td><td>120</td><td>amount > 5000</td></tr>
+      </table>
+      <p><strong>How it works:</strong></p>
+      <ul>
+        <li>Step 1 is always executed (no condition)</li>
+        <li>Step 2 only if amount > 500€</li>
+        <li>Step 3 only if amount > 5000€</li>
+      </ul>
+    `,
+    guideRequest: 'Create a Request',
+    guideRequestContent: `
+      <h3>Step by step</h3>
+      <ol>
+        <li>Click <strong>"New Request"</strong> button</li>
+        <li>Select the workflow type</li>
+        <li>Enter title and description</li>
+        <li>Fill in amount and priority</li>
+        <li>Click <strong>"Submit"</strong></li>
+      </ol>
+      <p>The request is created with status "Pending" and the first validator is notified.</p>
+    `,
+    guideValidate: 'Validate a Request',
+    guideValidateContent: `
+      <h3>For validators</h3>
+      <ol>
+        <li>Go to <strong>Requests</strong> tab</li>
+        <li>Click on a pending request</li>
+        <li>Review details and history</li>
+        <li>Add a comment (recommended)</li>
+        <li>Click <strong>"Approve"</strong> or <strong>"Reject"</strong></li>
+      </ol>
+      <p><strong>Important:</strong> All actions are logged in the audit trail and cannot be modified.</p>
+    `,
+    guideFeatures: 'Advanced Features',
+    guideFeaturesContent: `
+      <h3>Delegations</h3>
+      <p>In <strong>WF_Delegations</strong> table, add a delegation:</p>
+      <ul>
+        <li><strong>Delegator:</strong> manager@company.com</li>
+        <li><strong>Delegate:</strong> deputy@company.com</li>
+        <li><strong>Start_Date / End_Date:</strong> Vacation period</li>
+      </ul>
+      <p>During this period, the deputy receives validation requests.</p>
+      
+      <h3>Conditional Routing</h3>
+      <p>Use the <strong>Condition</strong> field in WF_Steps:</p>
+      <ul>
+        <li><code>amount > 1000</code> - Only if amount exceeds 1000</li>
+        <li><code>priority == 'high'</code> - Only for high priority</li>
+        <li><code>department == 'IT'</code> - Only for IT department</li>
+      </ul>
+      
+      <h3>Parallel Validation</h3>
+      <p>Set <strong>Is_Parallel = true</strong> for steps that must be validated simultaneously.</p>
+    `,
+    guideSupport: 'Support & Documentation',
+    guideSupportContent: `
+      <h3>Resources</h3>
+      <ul>
+        <li>🌐 <a href="https://gristup.fr" target="_blank">gristup.fr</a></li>
+        <li>📖 <a href="https://github.com/isaytoo/grist-workflow-validator-widget" target="_blank">GitHub Repository</a></li>
+        <li>📚 <a href="https://github.com/isaytoo/grist-workflow-validator-widget/blob/main/USER_GUIDE.md" target="_blank">Complete User Guide</a></li>
+      </ul>
+      <p><strong>Copyright 2026 Said Hamadou (isaytoo)</strong><br>Licensed under Apache License 2.0</p>
+    `
   },
   fr: {
     appTitle: 'Validateur de Workflow',
@@ -77,6 +165,7 @@ const i18n = {
     tabWorkflow: 'Configuration',
     tabHistory: 'Historique',
     tabStats: 'Statistiques',
+    tabGuide: '📖 Guide',
     newRequest: 'Nouvelle demande',
     allStatuses: 'Tous les statuts',
     allTypes: 'Tous les types',
@@ -127,7 +216,94 @@ const i18n = {
     modify: 'Modifier',
     tablesCreated: 'Tables créées automatiquement',
     autoSetup: 'Configuration automatique en cours...',
-    setupComplete: 'Configuration terminée !'
+    setupComplete: 'Configuration terminée !',
+    guideTitle: 'Guide Utilisateur - Validateur de Workflow',
+    guideIntro: 'Guide complet pour utiliser le widget Validateur de Workflow',
+    guideQuickStart: 'Démarrage Rapide',
+    guideQuickStartContent: `
+      <h3>Installation (Déjà fait ! ✅)</h3>
+      <p>Le widget est déjà installé et les 5 tables nécessaires ont été créées automatiquement :</p>
+      <ul>
+        <li><strong>WF_Requests</strong> - Demandes de validation</li>
+        <li><strong>WF_Steps</strong> - Configuration des workflows</li>
+        <li><strong>WF_ValidationLog</strong> - Journal d'audit</li>
+        <li><strong>WF_Delegations</strong> - Gestion des délégations</li>
+        <li><strong>WF_UserRoles</strong> - Rôles utilisateurs</li>
+      </ul>
+    `,
+    guideWorkflow: 'Configurer un Workflow',
+    guideWorkflowContent: `
+      <h3>Exemple : Note de frais (3 niveaux)</h3>
+      <p>Allez dans la table <strong>WF_Steps</strong> et ajoutez ces lignes :</p>
+      <table class="guide-table">
+        <tr><th>Workflow_Type</th><th>Step_Number</th><th>Step_Name</th><th>Validator_Email</th><th>SLA_Hours</th><th>Condition</th></tr>
+        <tr><td>Note de frais</td><td>1</td><td>Manager</td><td>manager@societe.fr</td><td>48</td><td></td></tr>
+        <tr><td>Note de frais</td><td>2</td><td>Finance</td><td>finance@societe.fr</td><td>72</td><td>amount > 500</td></tr>
+        <tr><td>Note de frais</td><td>3</td><td>Direction</td><td>direction@societe.fr</td><td>120</td><td>amount > 5000</td></tr>
+      </table>
+      <p><strong>Fonctionnement :</strong></p>
+      <ul>
+        <li>Étape 1 toujours exécutée (pas de condition)</li>
+        <li>Étape 2 uniquement si montant > 500€</li>
+        <li>Étape 3 uniquement si montant > 5000€</li>
+      </ul>
+    `,
+    guideRequest: 'Créer une Demande',
+    guideRequestContent: `
+      <h3>Étape par étape</h3>
+      <ol>
+        <li>Cliquez sur <strong>"Nouvelle demande"</strong></li>
+        <li>Sélectionnez le type de workflow</li>
+        <li>Entrez le titre et la description</li>
+        <li>Remplissez le montant et la priorité</li>
+        <li>Cliquez sur <strong>"Soumettre"</strong></li>
+      </ol>
+      <p>La demande est créée avec le statut "En attente" et le premier valideur est notifié.</p>
+    `,
+    guideValidate: 'Valider une Demande',
+    guideValidateContent: `
+      <h3>Pour les valideurs</h3>
+      <ol>
+        <li>Allez dans l'onglet <strong>Demandes</strong></li>
+        <li>Cliquez sur une demande en attente</li>
+        <li>Consultez les détails et l'historique</li>
+        <li>Ajoutez un commentaire (recommandé)</li>
+        <li>Cliquez sur <strong>"Approuver"</strong> ou <strong>"Rejeter"</strong></li>
+      </ol>
+      <p><strong>Important :</strong> Toutes les actions sont enregistrées dans le journal d'audit et ne peuvent pas être modifiées.</p>
+    `,
+    guideFeatures: 'Fonctionnalités Avancées',
+    guideFeaturesContent: `
+      <h3>Délégations</h3>
+      <p>Dans la table <strong>WF_Delegations</strong>, ajoutez une délégation :</p>
+      <ul>
+        <li><strong>Delegator :</strong> manager@societe.fr</li>
+        <li><strong>Delegate :</strong> adjoint@societe.fr</li>
+        <li><strong>Start_Date / End_Date :</strong> Période de congés</li>
+      </ul>
+      <p>Pendant cette période, l'adjoint reçoit les demandes de validation.</p>
+      
+      <h3>Routage Conditionnel</h3>
+      <p>Utilisez le champ <strong>Condition</strong> dans WF_Steps :</p>
+      <ul>
+        <li><code>amount > 1000</code> - Uniquement si montant > 1000</li>
+        <li><code>priority == 'high'</code> - Uniquement pour priorité haute</li>
+        <li><code>department == 'IT'</code> - Uniquement pour le département IT</li>
+      </ul>
+      
+      <h3>Validation Parallèle</h3>
+      <p>Définissez <strong>Is_Parallel = true</strong> pour les étapes qui doivent être validées simultanément.</p>
+    `,
+    guideSupport: 'Support & Documentation',
+    guideSupportContent: `
+      <h3>Ressources</h3>
+      <ul>
+        <li>🌐 <a href="https://gristup.fr" target="_blank">gristup.fr</a></li>
+        <li>📖 <a href="https://github.com/isaytoo/grist-workflow-validator-widget" target="_blank">Dépôt GitHub</a></li>
+        <li>📚 <a href="https://github.com/isaytoo/grist-workflow-validator-widget/blob/main/USER_GUIDE.md" target="_blank">Guide Utilisateur Complet</a></li>
+      </ul>
+      <p><strong>Copyright 2026 Said Hamadou (isaytoo)</strong><br>Sous licence Apache 2.0</p>
+    `
   }
 };
 
@@ -151,6 +327,7 @@ function updateUILanguage() {
   if (tabs[1]) tabs[1].textContent = t('tabWorkflow');
   if (tabs[2]) tabs[2].textContent = t('tabHistory');
   if (tabs[3]) tabs[3].textContent = t('tabStats');
+  if (tabs[4]) tabs[4].textContent = t('tabGuide');
   
   // Update buttons
   const btnNewRequest = document.getElementById('btnNewRequest');
@@ -175,8 +352,53 @@ function updateUILanguage() {
     filterType.innerHTML = `<option value="">${t('allTypes')}</option>`;
   }
   
+  // Update guide content
+  renderGuide();
+  
   // Re-render current view
   renderUI();
+}
+
+function renderGuide() {
+  const guideContent = document.getElementById('guideContent');
+  if (!guideContent) return;
+  
+  guideContent.innerHTML = `
+    <div class="guide-header">
+      <h1>${t('guideTitle')}</h1>
+      <p class="guide-intro">${t('guideIntro')}</p>
+    </div>
+    
+    <div class="guide-section-item">
+      <h2>1. ${t('guideQuickStart')}</h2>
+      ${t('guideQuickStartContent')}
+    </div>
+    
+    <div class="guide-section-item">
+      <h2>2. ${t('guideWorkflow')}</h2>
+      ${t('guideWorkflowContent')}
+    </div>
+    
+    <div class="guide-section-item">
+      <h2>3. ${t('guideRequest')}</h2>
+      ${t('guideRequestContent')}
+    </div>
+    
+    <div class="guide-section-item">
+      <h2>4. ${t('guideValidate')}</h2>
+      ${t('guideValidateContent')}
+    </div>
+    
+    <div class="guide-section-item">
+      <h2>5. ${t('guideFeatures')}</h2>
+      ${t('guideFeaturesContent')}
+    </div>
+    
+    <div class="guide-section-item">
+      <h2>6. ${t('guideSupport')}</h2>
+      ${t('guideSupportContent')}
+    </div>
+  `;
 }
 
 // Table names
