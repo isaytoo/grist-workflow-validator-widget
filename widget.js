@@ -193,13 +193,12 @@ const state = {
 // Auto-setup: Create required tables if they don't exist
 async function ensureTablesExist() {
   try {
-    const tables = await grist.docApi.listTables();
-    const existingTables = tables.map(t => t.id);
+    const existingTables = await grist.docApi.listTables();
     
     console.log('Existing tables:', existingTables);
     
     // Create Requests table
-    if (!existingTables.includes(REQUESTS_TABLE)) {
+    if (existingTables.indexOf(REQUESTS_TABLE) === -1) {
       console.log('Creating Requests table...');
       await grist.docApi.applyUserActions([
         ['AddTable', REQUESTS_TABLE, [
@@ -218,7 +217,7 @@ async function ensureTablesExist() {
     }
     
     // Create WorkflowSteps table
-    if (!existingTables.includes(WORKFLOW_STEPS_TABLE)) {
+    if (existingTables.indexOf(WORKFLOW_STEPS_TABLE) === -1) {
       console.log('Creating WorkflowSteps table...');
       await grist.docApi.applyUserActions([
         ['AddTable', WORKFLOW_STEPS_TABLE, [
@@ -235,7 +234,7 @@ async function ensureTablesExist() {
     }
     
     // Create ValidationLog table
-    if (!existingTables.includes(VALIDATION_LOG_TABLE)) {
+    if (existingTables.indexOf(VALIDATION_LOG_TABLE) === -1) {
       console.log('Creating ValidationLog table...');
       await grist.docApi.applyUserActions([
         ['AddTable', VALIDATION_LOG_TABLE, [
@@ -251,7 +250,7 @@ async function ensureTablesExist() {
     }
     
     // Create Delegations table (optional)
-    if (!existingTables.includes(DELEGATIONS_TABLE)) {
+    if (existingTables.indexOf(DELEGATIONS_TABLE) === -1) {
       console.log('Creating Delegations table...');
       await grist.docApi.applyUserActions([
         ['AddTable', DELEGATIONS_TABLE, [
@@ -266,7 +265,7 @@ async function ensureTablesExist() {
     }
     
     // Create UserRoles table (optional)
-    if (!existingTables.includes(USER_ROLES_TABLE)) {
+    if (existingTables.indexOf(USER_ROLES_TABLE) === -1) {
       console.log('Creating UserRoles table...');
       await grist.docApi.applyUserActions([
         ['AddTable', USER_ROLES_TABLE, [
