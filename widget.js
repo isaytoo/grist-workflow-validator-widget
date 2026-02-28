@@ -794,6 +794,12 @@ function setupEventListeners() {
     });
   }
   
+  // Add workflow type button
+  const btnAddWorkflowType = document.getElementById('btnAddWorkflowType');
+  if (btnAddWorkflowType) {
+    btnAddWorkflowType.addEventListener('click', addWorkflowType);
+  }
+  
   // Filters
   const filterStatus = document.getElementById('filterStatus');
   const filterType = document.getElementById('filterType');
@@ -911,6 +917,45 @@ function renderRequestsList() {
   `).join('');
 }
 
+// Workflow management functions
+async function addWorkflowType() {
+  const workflowName = prompt(t('modalNewRequest'), 'Note de frais');
+  if (!workflowName || workflowName.trim() === '') return;
+  
+  try {
+    showLoading(true);
+    
+    // Add a default step to WF_Steps table
+    await grist.docApi.applyUserActions([
+      ['AddRecord', WORKFLOW_STEPS_TABLE, null, {
+        Workflow_Type: workflowName.trim(),
+        Step_Number: 1,
+        Step_Name: 'Étape 1',
+        Validator_Email: 'validator@example.com',
+        SLA_Hours: 48,
+        Is_Parallel: false,
+        Condition: ''
+      }]
+    ]);
+    
+    showSuccess('Workflow créé ! Allez dans la table WF_Steps pour le configurer.');
+    
+    // Reload data
+    await loadData();
+    renderWorkflowConfig();
+    
+  } catch (error) {
+    console.error('Error creating workflow:', error);
+    showError('Erreur lors de la création du workflow');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function editWorkflowType(typeName) {
+  showInfo(`Pour modifier le workflow "${typeName}", allez dans la table WF_Steps et modifiez les lignes correspondantes.`);
+}
+
 // Render workflow configuration
 function renderWorkflowConfig() {
   const typesList = document.getElementById('workflowTypesList');
@@ -920,8 +965,8 @@ function renderWorkflowConfig() {
     typesList.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">⚙️</div>
-        <div class="empty-state-title">Aucun workflow configuré</div>
-        <p>Ajoutez un type de workflow pour commencer</p>
+        <div class="empty-state-title">${t('noWorkflows')}</div>
+        <p>${t('noWorkflowsDesc')}</p>
       </div>
     `;
     return;
@@ -931,11 +976,11 @@ function renderWorkflowConfig() {
     <div class="workflow-type-card">
       <div>
         <div class="workflow-title">${escapeHtml(type.name)}</div>
-        <div class="workflow-meta">${type.steps.length} étape(s)</div>
+        <div class="workflow-meta">${type.steps.length} ${t('steps')}</div>
       </div>
       <div>
-        <button class="btn btn-secondary" onclick="editWorkflowType('${type.name}')">
-          Modifier
+        <button class="btn btn-secondary" onclick="editWorkflowType('${escapeHtml(type.name)}')">
+          ${t('modify')}
         </button>
       </div>
     </div>
@@ -1235,12 +1280,48 @@ async function logAction(action, description, details = {}) {
   }
 }
 
-// Utility functions
+// Helper functions
 function escapeHtml(text) {
-  if (!text) return '';
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function showSuccess(message) {
+  showToast(message, 'success');
+}
+
+function showError(message) {
+  showToast(message, 'error');
+}
+
+function showInfo(message) {
+  showToast(message, 'info');
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+  `;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-in';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 function formatDate(dateString) {
