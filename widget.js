@@ -982,8 +982,54 @@ function renderRequestsList() {
 
 // Workflow management functions
 async function addWorkflowType() {
-  const workflowName = prompt(t('modalNewRequest'), 'Note de frais');
-  if (!workflowName || workflowName.trim() === '') return;
+  // Create custom input modal
+  const modalHtml = `
+    <div id="modalWorkflowName" class="modal active">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2>Nouveau type de workflow</h2>
+          <button class="modal-close" onclick="closeWorkflowNameModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="workflowNameInput">Nom du workflow *</label>
+            <input type="text" id="workflowNameInput" class="form-control" placeholder="Ex: Note de frais" autofocus>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeWorkflowNameModal()">Annuler</button>
+            <button type="button" class="btn btn-primary" onclick="submitWorkflowName()">Créer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Add modal to body
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = modalHtml;
+  document.body.appendChild(tempDiv.firstElementChild);
+  
+  // Focus input
+  setTimeout(() => {
+    document.getElementById('workflowNameInput').focus();
+  }, 100);
+}
+
+window.closeWorkflowNameModal = function() {
+  const modal = document.getElementById('modalWorkflowName');
+  if (modal) modal.remove();
+}
+
+window.submitWorkflowName = async function() {
+  const input = document.getElementById('workflowNameInput');
+  const workflowName = input.value.trim();
+  
+  if (!workflowName) {
+    showError('Veuillez entrer un nom de workflow');
+    return;
+  }
+  
+  closeWorkflowNameModal();
   
   try {
     showLoading(true);
@@ -991,9 +1037,10 @@ async function addWorkflowType() {
     // Add a default step to WF_Steps table
     await grist.docApi.applyUserActions([
       ['AddRecord', WORKFLOW_STEPS_TABLE, null, {
-        Workflow_Type: workflowName.trim(),
+        Workflow_Type: workflowName,
         Step_Number: 1,
         Step_Name: 'Étape 1',
+        Validator_Role: 'Manager',
         Validator_Email: 'validator@example.com',
         SLA_Hours: 48,
         Is_Parallel: false,
