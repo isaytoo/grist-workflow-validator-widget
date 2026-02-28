@@ -1,8 +1,19 @@
 # 🔄 Grist Workflow Validator Widget
 
-Widget révolutionnaire pour la gestion des circuits de validation dans Grist, conçu pour les administrations et le secteur privé.
+Revolutionary widget for managing multi-level validation workflows in Grist, designed for public administrations and private sector.
 
-## 🎯 Fonctionnalités principales
+**🌍 Available in English and French** | **⚡ Auto-setup: Tables created automatically**
+
+## 🚀 Quick Start
+
+1. Add a Custom Widget in Grist
+2. URL: `https://isaytoo.github.io/grist-workflow-validator-widget/`
+3. Access: **Full document access**
+4. **Done!** Tables are created automatically on first load
+
+No manual configuration needed - the widget creates all required tables for you.
+
+## 🎯 Key Features
 
 ### ✅ Circuits de validation multi-niveaux
 - Validation séquentielle (A → B → C) ou parallèle (A + B → C)
@@ -23,79 +34,89 @@ Widget révolutionnaire pour la gestion des circuits de validation dans Grist, c
 - Suivi des délais (SLA tracking)
 - Dashboard temps réel
 
-### 📜 Traçabilité légale
-- Journal d'audit non modifiable (append-only log)
-- Historique complet : qui, quand, pourquoi
-- Export PDF signé numériquement (à venir)
-- Conformité RGPD
+### 📜 Legal Traceability
+- Immutable audit log (append-only)
+- Complete history: who, when, why
+- Digitally signed PDF export (coming soon)
+- GDPR compliant
 
-## 📋 Structure des tables Grist requises
+### 🌍 Multilingual
+- English and French interface
+- Auto-detect browser language
+- Easy to add more languages
 
-### 1. Table `Requests` (Demandes)
-Colonnes requises :
-- `id` (Integer) - ID auto
-- `type` (Text) - Type de demande
-- `title` (Text) - Titre
-- `description` (Text) - Description
-- `requester` (Text) - Email du demandeur
-- `status` (Choice) - pending, approved, rejected, cancelled
-- `created_at` (DateTime) - Date de création
-- `completed_at` (DateTime) - Date de finalisation
-- `current_step` (Text) - Étape actuelle
+### ⚡ Auto-Setup
+- **No manual configuration required**
+- Tables created automatically on first load
+- Pre-configured with best practices
+- Ready to use in seconds
 
-### 2. Table `WorkflowSteps` (Étapes du workflow)
-Colonnes requises :
-- `id` (Integer) - ID auto
-- `workflow_type` (Text) - Type de workflow
-- `step_number` (Integer) - Numéro d'ordre
-- `step_name` (Text) - Nom de l'étape
-- `validator_role` (Text) - Rôle du valideur
-- `validator_email` (Text) - Email du valideur
-- `sla_hours` (Integer) - Délai en heures
-- `is_parallel` (Toggle) - Validation parallèle
+## 📋 Tables Structure (Auto-created)
 
-### 3. Table `ValidationLog` (Journal de validation)
-Colonnes requises :
-- `id` (Integer) - ID auto
-- `request_id` (Reference:Requests) - Référence à la demande
-- `user` (Text) - Email de l'utilisateur
-- `action` (Text) - Action effectuée
-- `description` (Text) - Description
-- `timestamp` (DateTime) - Horodatage
-- `details` (Text) - Détails JSON
-- `comment` (Text) - Commentaire
+The widget automatically creates these tables on first load:
 
-### 4. Table `Delegations` (Délégations) - Optionnel
-Colonnes :
-- `id` (Integer) - ID auto
-- `delegator` (Text) - Email du délégant
-- `delegate` (Text) - Email du délégataire
-- `start_date` (Date) - Date de début
-- `end_date` (Date) - Date de fin
-- `workflow_type` (Text) - Type de workflow concerné
+### 1. `WF_Requests` - Validation Requests
+- `Type` (Text) - Request type
+- `Title` (Text) - Title
+- `Description` (Text) - Description
+- `Requester` (Text) - Requester email
+- `Status` (Choice) - pending, approved, rejected, cancelled
+- `Created_At` (DateTime) - Auto-filled
+- `Completed_At` (DateTime) - Completion date
+- `Current_Step` (Text) - Current workflow step
+- `Amount` (Numeric) - Amount (for conditional routing)
+- `Priority` (Choice) - low, medium, high
 
-### 5. Table `UserRoles` (Rôles utilisateurs) - Optionnel
-Colonnes :
-- `id` (Integer) - ID auto
-- `email` (Text) - Email utilisateur
-- `role` (Choice) - Owner, Editor, Viewer
-- `department` (Text) - Service
+### 2. `WF_Steps` - Workflow Configuration
+- `Workflow_Type` (Text) - Workflow type name
+- `Step_Number` (Int) - Step order
+- `Step_Name` (Text) - Step name
+- `Validator_Role` (Text) - Validator role
+- `Validator_Email` (Text) - Validator email
+- `SLA_Hours` (Int) - SLA in hours
+- `Is_Parallel` (Bool) - Parallel validation
+- `Condition` (Text) - Conditional routing (e.g., "Amount > 1000")
 
-## 🚀 Installation
+### 3. `WF_ValidationLog` - Audit Trail
+- `Request_Id` (Ref:WF_Requests) - Request reference
+- `User` (Text) - User email
+- `Action` (Text) - Action performed
+- `Description` (Text) - Description
+- `Timestamp` (DateTime) - Auto-filled
+- `Details` (Text) - JSON details
+- `Comment` (Text) - User comment
 
-1. **Créer les tables** dans votre document Grist selon la structure ci-dessus
+### 4. `WF_Delegations` - Delegation Management
+- `Delegator` (Text) - Delegator email
+- `Delegate` (Text) - Delegate email
+- `Start_Date` (Date) - Start date
+- `End_Date` (Date) - End date
+- `Workflow_Type` (Text) - Workflow type
+- `Is_Active` (Bool) - Auto-calculated (active if today is between dates)
 
-2. **Ajouter le widget** :
-   - Créer une nouvelle page Custom Widget
-   - URL : `https://votre-url/index.html`
-   - Accès : Full document access
+### 5. `WF_UserRoles` - User Roles
+- `Email` (Text) - User email
+- `Role` (Choice) - Owner, Editor, Viewer
+- `Department` (Text) - Department
+- `Manager_Email` (Text) - Manager email
 
-3. **Mapper les colonnes** :
-   - Requests → Table des demandes
-   - WorkflowSteps → Table des étapes workflow
-   - ValidationLog → Table du journal de validation
-   - Delegations → Table des délégations (optionnel)
-   - UserRoles → Table des rôles (optionnel)
+## 🚀 Installation (2 minutes)
+
+1. **Add Custom Widget** in your Grist document
+   - Create a new page → Custom Widget
+   - URL: `https://isaytoo.github.io/grist-workflow-validator-widget/`
+   - Access: **Full document access**
+   - Click **Save**
+
+2. **That's it!** 🎉
+   - Tables are created automatically
+   - Widget is ready to use
+   - Start creating workflows
+
+### Alternative URLs
+
+- **GitHub Pages**: `https://isaytoo.github.io/grist-workflow-validator-widget/`
+- **jsDelivr CDN**: `https://cdn.jsdelivr.net/gh/isaytoo/grist-workflow-validator-widget@main/index.html`
 
 ## 💼 Cas d'usage
 
