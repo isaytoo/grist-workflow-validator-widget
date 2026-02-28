@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Validator - Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      padding: 20px;
+    }
+    
+    .demo-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .demo-header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .demo-header h1 {
+      color: #3b82f6;
+      margin-bottom: 10px;
+    }
+    
+    .demo-header p {
+      color: #64748b;
+      font-size: 1.1em;
+    }
+    
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .demo-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .demo-section h2 {
+      color: #0f172a;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+    }
+    
+    .widget-frame {
+      grid-column: 1 / -1;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    iframe {
+      width: 100%;
+      height: 800px;
+      border: none;
+    }
+    
+    .feature-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .feature-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .feature-list li:last-child {
+      border-bottom: none;
+    }
+    
+    .icon {
+      font-size: 1.3em;
+    }
+    
+    .use-case {
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .use-case h3 {
+      color: #3b82f6;
+      font-size: 1em;
+      margin-bottom: 5px;
+    }
+    
+    .use-case p {
+      color: #64748b;
+      font-size: 0.9em;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #3b82f6;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+      margin-top: 15px;
+      transition: background 0.2s;
+    }
+    
+    .btn:hover {
+      background: #2563eb;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .stat {
+      text-align: center;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+    
+    .stat-value {
+      font-size: 2em;
+      font-weight: 700;
+      color: #3b82f6;
+    }
+    
+    .stat-label {
+      font-size: 0.85em;
+      color: #64748b;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="demo-header">
+      <h1>🔄 Grist Workflow Validator Widget - Démo</h1>
+      <p>Widget révolutionnaire pour la gestion des circuits de validation multi-niveaux</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">100%</div>
+          <div class="stat-label">Traçabilité</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">3x</div>
+          <div class="stat-label">Plus rapide</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">∞</div>
+          <div class="stat-label">Workflows</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-grid">
+      <div class="demo-section">
+        <h2>✨ Fonctionnalités clés</h2>
+        <ul class="feature-list">
+          <li>
+            <span class="icon">🔐</span>
+            <span>Détection automatique des rôles (Owner/Editor/Viewer)</span>
+          </li>
+          <li>
+            <span class="icon">📜</span>
+            <span>Traçabilité immuable avec journal d'audit</span>
+          </li>
+          <li>
+            <span class="icon">⚡</span>
+            <span>Workflows séquentiels et parallèles</span>
+          </li>
+          <li>
+            <span class="icon">🔔</span>
+            <span>Notifications et suivi SLA</span>
+          </li>
+          <li>
+            <span class="icon">👥</span>
+            <span>Gestion des délégations d'absence</span>
+          </li>
+          <li>
+            <span class="icon">📊</span>
+            <span>Dashboard statistiques temps réel</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="demo-section">
+        <h2>💼 Cas d'usage</h2>
+        
+        <div class="use-case">
+          <h3>🏛️ Administration publique</h3>
+          <p>Validation de subventions, congés, missions, habilitations</p>
+        </div>
+        
+        <div class="use-case">
+          <h3>🏢 Secteur privé</h3>
+          <p>Notes de frais, bons de commande, validations budgétaires</p>
+        </div>
+        
+        <div class="use-case">
+          <h3>🏥 Santé</h3>
+          <p>Approbation congés médicaux, demandes matériel, formations</p>
+        </div>
+        
+        <a href="https://github.com/isaytoo/grist-workflow-validator-widget" class="btn" target="_blank">
+          📖 Documentation complète
+        </a>
+      </div>
+    </div>
+
+    <div class="widget-frame">
+      <iframe src="index.html"></iframe>
+    </div>
+  </div>
+</body>
+</html>
