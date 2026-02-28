@@ -1165,8 +1165,8 @@ function openRequestDetails(requestId) {
   
   const modal = document.getElementById('modalRequestDetails');
   const detailsContainer = document.getElementById('requestDetailsContent');
-  const timelineContainer = document.getElementById('requestTimeline');
-  const actionsContainer = document.getElementById('requestActions');
+  const timelineContainer = document.getElementById('workflowTimeline');
+  const actionsContainer = document.getElementById('validationActions');
   
   // Render request details
   detailsContainer.innerHTML = `
