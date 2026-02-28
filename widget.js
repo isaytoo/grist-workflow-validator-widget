@@ -789,7 +789,7 @@ function parseTableData(tableData) {
       
       // Convert Grist timestamps (seconds since epoch) to JavaScript Date
       // Grist DateTime columns return Unix timestamps in seconds
-      if (colName.includes('_At') || colName.includes('Timestamp')) {
+      if (colName.includes('_At') || colName.includes('Timestamp') || colName.includes('_Date')) {
         if (typeof value === 'number' && value > 0) {
           // Grist uses seconds, JavaScript uses milliseconds
           value = new Date(value * 1000).toISOString();
