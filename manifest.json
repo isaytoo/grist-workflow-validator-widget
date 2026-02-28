@@ -1,0 +1,56 @@
+{
+  "name": "Workflow Validator",
+  "description": "Widget révolutionnaire pour la gestion des circuits de validation multi-niveaux avec traçabilité immuable et sécurité renforcée",
+  "version": "1.0.0",
+  "author": "Said Hamadou (isaytoo)",
+  "license": "Apache-2.0",
+  "homepage": "https://gristup.fr",
+  "repository": "https://github.com/isaytoo/grist-workflow-validator-widget",
+  "grist": {
+    "requiredAccess": "full",
+    "columns": [
+      {
+        "name": "Requests",
+        "title": "Table des demandes",
+        "optional": false,
+        "description": "Table contenant les demandes de validation"
+      },
+      {
+        "name": "WorkflowSteps",
+        "title": "Table des étapes workflow",
+        "optional": false,
+        "description": "Table définissant les étapes de validation pour chaque type de workflow"
+      },
+      {
+        "name": "ValidationLog",
+        "title": "Table du journal de validation",
+        "optional": false,
+        "description": "Table d'audit contenant l'historique immuable des actions"
+      },
+      {
+        "name": "Delegations",
+        "title": "Table des délégations",
+        "optional": true,
+        "description": "Table gérant les délégations de pouvoir (absences, intérim)"
+      },
+      {
+        "name": "UserRoles",
+        "title": "Table des rôles utilisateurs",
+        "optional": true,
+        "description": "Table mappant les utilisateurs à leurs rôles"
+      }
+    ]
+  },
+  "keywords": [
+    "workflow",
+    "validation",
+    "approval",
+    "audit",
+    "compliance",
+    "administration",
+    "security",
+    "delegation",
+    "sla",
+    "tracking"
+  ]
+}

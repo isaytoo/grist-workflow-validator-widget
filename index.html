@@ -1,0 +1,177 @@
+<!--
+  Grist Workflow Validator Widget
+  Copyright 2026 Said Hamadou (isaytoo)
+  Licensed under the Apache License, Version 2.0
+  https://github.com/isaytoo/grist-workflow-validator-widget
+-->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflow Validator</title>
+  <script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <h1>🔄 Workflow Validator</h1>
+      <div class="user-info">
+        <span id="userEmail" class="user-email"></span>
+        <span id="userRole" class="user-role"></span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="requests">Demandes</button>
+        <button class="tab-btn" data-tab="workflow">Configuration</button>
+        <button class="tab-btn" data-tab="history">Historique</button>
+        <button class="tab-btn" data-tab="stats">Statistiques</button>
+      </div>
+
+      <!-- Tab: Demandes -->
+      <div id="tab-requests" class="tab-content active">
+        <div class="toolbar">
+          <button id="btnNewRequest" class="btn btn-primary">
+            <span class="icon">➕</span> Nouvelle demande
+          </button>
+          <div class="filters">
+            <select id="filterStatus" class="filter-select">
+              <option value="">Tous les statuts</option>
+              <option value="pending">En attente</option>
+              <option value="approved">Approuvé</option>
+              <option value="rejected">Rejeté</option>
+              <option value="cancelled">Annulé</option>
+            </select>
+            <select id="filterType" class="filter-select">
+              <option value="">Tous les types</option>
+            </select>
+          </div>
+        </div>
+        <div id="requestsList" class="requests-list"></div>
+      </div>
+
+      <!-- Tab: Configuration Workflow -->
+      <div id="tab-workflow" class="tab-content">
+        <div class="workflow-config">
+          <h2>Configuration des circuits de validation</h2>
+          <div class="config-section">
+            <h3>Types de demandes</h3>
+            <button id="btnAddWorkflowType" class="btn btn-secondary">
+              <span class="icon">➕</span> Ajouter un type
+            </button>
+            <div id="workflowTypesList" class="workflow-types-list"></div>
+          </div>
+          <div class="config-section">
+            <h3>Étapes de validation</h3>
+            <div id="workflowStepsCanvas" class="workflow-canvas"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Historique -->
+      <div id="tab-history" class="tab-content">
+        <div class="history-section">
+          <h2>Journal d'audit</h2>
+          <div class="audit-filters">
+            <input type="date" id="filterDateFrom" class="date-input" placeholder="Du">
+            <input type="date" id="filterDateTo" class="date-input" placeholder="Au">
+            <input type="text" id="filterUser" class="text-input" placeholder="Utilisateur">
+            <button id="btnFilterAudit" class="btn btn-secondary">Filtrer</button>
+          </div>
+          <div id="auditLog" class="audit-log"></div>
+        </div>
+      </div>
+
+      <!-- Tab: Statistiques -->
+      <div id="tab-stats" class="tab-content">
+        <div class="stats-section">
+          <h2>Tableau de bord</h2>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Demandes en attente</h3>
+              <div id="statPending" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <h3>Délai moyen</h3>
+              <div id="statAvgDelay" class="stat-value">0j</div>
+            </div>
+            <div class="stat-card">
+              <h3>Taux d'approbation</h3>
+              <div id="statApprovalRate" class="stat-value">0%</div>
+            </div>
+            <div class="stat-card">
+              <h3>SLA respectés</h3>
+              <div id="statSLA" class="stat-value">0%</div>
+            </div>
+          </div>
+          <div id="statsCharts" class="stats-charts"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Nouvelle demande -->
+    <div id="modalNewRequest" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Nouvelle demande</h2>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="formNewRequest">
+            <div class="form-group">
+              <label for="requestType">Type de demande *</label>
+              <select id="requestType" required class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label for="requestTitle">Titre *</label>
+              <input type="text" id="requestTitle" required class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="requestDescription">Description</label>
+              <textarea id="requestDescription" rows="4" class="form-control"></textarea>
+            </div>
+            <div id="dynamicFields"></div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btnCancelRequest">Annuler</button>
+              <button type="submit" class="btn btn-primary">Soumettre</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Détails demande -->
+    <div id="modalRequestDetails" class="modal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2 id="requestDetailsTitle">Détails de la demande</h2>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="requestDetailsContent"></div>
+          <div class="workflow-timeline" id="workflowTimeline"></div>
+          <div class="validation-actions" id="validationActions"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="spinner-overlay" style="display: none;">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <footer style="position: fixed; bottom: 0; left: 0; right: 0; background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 4px 12px; font-size: 0.7em; color: #94a3b8; display: flex; justify-content: space-between; z-index: 1000;">
+    <span>© 2026 Said Hamadou (isaytoo)</span>
+    <a href="https://gristup.fr" target="_blank" style="color: #3b82f6; text-decoration: none;">gristup.fr</a>
+  </footer>
+
+  <script src="widget.js"></script>
+</body>
+</html>

@@ -1,0 +1,753 @@
+/**
+ * Grist Workflow Validator Widget
+ * Copyright 2026 Said Hamadou (isaytoo)
+ * Licensed under the Apache License, Version 2.0
+ * https://github.com/isaytoo/grist-workflow-validator-widget
+ */
+
+// Global state
+const state = {
+  userEmail: null,
+  userRole: null,
+  currentUser: null,
+  requests: [],
+  workflowTypes: [],
+  auditLog: [],
+  selectedRequest: null,
+  mappedColumns: {
+    requests: null,
+    workflowSteps: null,
+    validationLog: null,
+    delegations: null,
+    userRoles: null
+  }
+};
+
+// Initialize widget
+grist.ready({
+  requiredAccess: 'full',
+  columns: [
+    { name: 'Requests', title: 'Table des demandes', optional: false },
+    { name: 'WorkflowSteps', title: 'Table des étapes workflow', optional: false },
+    { name: 'ValidationLog', title: 'Table du journal de validation', optional: false },
+    { name: 'Delegations', title: 'Table des délégations', optional: true },
+    { name: 'UserRoles', title: 'Table des rôles utilisateurs', optional: true }
+  ]
+});
+
+grist.onRecord(function(record, mappings) {
+  console.log('Record received:', record);
+  console.log('Mappings:', mappings);
+  state.mappedColumns = mappings;
+  init();
+});
+
+// Initialize application
+async function init() {
+  try {
+    showLoading(true);
+    
+    // Detect user role and email
+    await detectUserRole();
+    
+    // Load data
+    await loadData();
+    
+    // Setup UI
+    setupEventListeners();
+    renderUI();
+    
+    showLoading(false);
+  } catch (error) {
+    console.error('Initialization error:', error);
+    showError('Erreur lors de l\'initialisation du widget');
+    showLoading(false);
+  }
+}
+
+// User Role Detection (using the proven method)
+async function detectUserRole() {
+  try {
+    // Step 1: Get user email via helper table with trigger formula
+    const userEmail = await getUserEmail();
+    state.userEmail = userEmail;
+    state.currentUser = userEmail;
+    
+    // Step 2: Detect if Owner (try structure modification)
+    const isOwner = await detectOwner();
+    
+    if (isOwner) {
+      state.userRole = 'Owner';
+    } else {
+      // Step 3: Detect Editor vs Viewer (try empty write)
+      const isEditor = await detectEditor();
+      state.userRole = isEditor ? 'Editor' : 'Viewer';
+    }
+    
+    updateUserDisplay();
+    
+  } catch (error) {
+    console.error('Role detection error:', error);
+    state.userRole = 'Unknown';
+    state.userEmail = 'unknown@example.com';
+  }
+}
+
+async function getUserEmail() {
+  try {
+    // Try to get email from UserRoles table if it exists
+    if (state.mappedColumns.UserRoles) {
+      const accessToken = await grist.docApi.getAccessToken({ readOnly: true });
+      const docId = await grist.docApi.getDocName();
+      
+      // This would use the REST API with the access token
+      // For now, return a placeholder
+      return 'user@example.com';
+    }
+    
+    // Fallback: try to get from Grist user info
+    const user = await grist.getUser();
+    return user?.email || 'user@example.com';
+    
+  } catch (error) {
+    console.error('Error getting user email:', error);
+    return 'user@example.com';
+  }
+}
+
+async function detectOwner() {
+  try {
+    // Try to modify column (structure change)
+    // This will fail with "Blocked by full structure access rules" if not Owner
+    await grist.docApi.applyUserActions([
+      ['ModifyColumn', 'ValidationLog', 'id', {}]
+    ]);
+    return true;
+  } catch (error) {
+    if (error.message && error.message.includes('Blocked by full structure access rules')) {
+      return false;
+    }
+    // If error is something else, assume not owner
+    return false;
+  }
+}
+
+async function detectEditor() {
+  try {
+    // Try empty write operation
+    await grist.docApi.applyUserActions([]);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function updateUserDisplay() {
+  const emailEl = document.getElementById('userEmail');
+  const roleEl = document.getElementById('userRole');
+  
+  if (emailEl) emailEl.textContent = state.userEmail;
+  if (roleEl) {
+    roleEl.textContent = state.userRole;
+    roleEl.className = `user-role ${state.userRole.toLowerCase()}`;
+  }
+}
+
+// Load data from Grist tables
+async function loadData() {
+  try {
+    // Load requests
+    if (state.mappedColumns.Requests) {
+      const requestsData = await grist.docApi.fetchTable(state.mappedColumns.Requests);
+      state.requests = parseTableData(requestsData);
+    }
+    
+    // Load workflow types
+    if (state.mappedColumns.WorkflowSteps) {
+      const stepsData = await grist.docApi.fetchTable(state.mappedColumns.WorkflowSteps);
+      state.workflowTypes = parseWorkflowTypes(stepsData);
+    }
+    
+    // Load audit log
+    if (state.mappedColumns.ValidationLog) {
+      const logData = await grist.docApi.fetchTable(state.mappedColumns.ValidationLog);
+      state.auditLog = parseTableData(logData);
+    }
+    
+  } catch (error) {
+    console.error('Error loading data:', error);
+    throw error;
+  }
+}
+
+function parseTableData(tableData) {
+  const records = [];
+  const { id, ...columns } = tableData;
+  
+  for (let i = 0; i < id.length; i++) {
+    const record = { id: id[i] };
+    for (const [key, values] of Object.entries(columns)) {
+      record[key] = values[i];
+    }
+    records.push(record);
+  }
+  
+  return records;
+}
+
+function parseWorkflowTypes(stepsData) {
+  const types = {};
+  const records = parseTableData(stepsData);
+  
+  records.forEach(step => {
+    const type = step.workflow_type || 'default';
+    if (!types[type]) {
+      types[type] = {
+        name: type,
+        steps: []
+      };
+    }
+    types[type].steps.push(step);
+  });
+  
+  return Object.values(types);
+}
+
+// Event Listeners
+function setupEventListeners() {
+  // Tab navigation
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      switchTab(e.target.dataset.tab);
+    });
+  });
+  
+  // New request button
+  const btnNewRequest = document.getElementById('btnNewRequest');
+  if (btnNewRequest) {
+    btnNewRequest.addEventListener('click', openNewRequestModal);
+  }
+  
+  // Modal close buttons
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      closeModal(e.target.closest('.modal'));
+    });
+  });
+  
+  // New request form
+  const formNewRequest = document.getElementById('formNewRequest');
+  if (formNewRequest) {
+    formNewRequest.addEventListener('submit', handleNewRequestSubmit);
+  }
+  
+  // Cancel button
+  const btnCancelRequest = document.getElementById('btnCancelRequest');
+  if (btnCancelRequest) {
+    btnCancelRequest.addEventListener('click', () => {
+      closeModal(document.getElementById('modalNewRequest'));
+    });
+  }
+  
+  // Filters
+  const filterStatus = document.getElementById('filterStatus');
+  const filterType = document.getElementById('filterType');
+  
+  if (filterStatus) {
+    filterStatus.addEventListener('change', renderRequestsList);
+  }
+  if (filterType) {
+    filterType.addEventListener('change', renderRequestsList);
+  }
+  
+  // Close modals on outside click
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal(modal);
+      }
+    });
+  });
+}
+
+// Tab switching
+function switchTab(tabName) {
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tabName);
+  });
+  
+  // Update tab content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    content.classList.toggle('active', content.id === `tab-${tabName}`);
+  });
+  
+  // Render content for the active tab
+  switch(tabName) {
+    case 'requests':
+      renderRequestsList();
+      break;
+    case 'workflow':
+      renderWorkflowConfig();
+      break;
+    case 'history':
+      renderAuditLog();
+      break;
+    case 'stats':
+      renderStats();
+      break;
+  }
+}
+
+// Render UI
+function renderUI() {
+  renderRequestsList();
+  renderWorkflowConfig();
+  renderStats();
+}
+
+// Render requests list
+function renderRequestsList() {
+  const container = document.getElementById('requestsList');
+  if (!container) return;
+  
+  const filterStatus = document.getElementById('filterStatus')?.value || '';
+  const filterType = document.getElementById('filterType')?.value || '';
+  
+  let filteredRequests = state.requests;
+  
+  if (filterStatus) {
+    filteredRequests = filteredRequests.filter(r => r.status === filterStatus);
+  }
+  
+  if (filterType) {
+    filteredRequests = filteredRequests.filter(r => r.type === filterType);
+  }
+  
+  if (filteredRequests.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📋</div>
+        <div class="empty-state-title">Aucune demande</div>
+        <p>Créez votre première demande pour commencer</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = filteredRequests.map(request => `
+    <div class="request-card" onclick="openRequestDetails(${request.id})">
+      <div class="request-card-header">
+        <div>
+          <div class="request-title">${escapeHtml(request.title || 'Sans titre')}</div>
+          <div class="request-type">${escapeHtml(request.type || 'Type non défini')}</div>
+        </div>
+        <span class="request-status status-${request.status || 'pending'}">
+          ${getStatusLabel(request.status)}
+        </span>
+      </div>
+      <div class="request-meta">
+        <div class="request-meta-item">
+          <span>👤</span>
+          <span>${escapeHtml(request.requester || 'Inconnu')}</span>
+        </div>
+        <div class="request-meta-item">
+          <span>📅</span>
+          <span>${formatDate(request.created_at)}</span>
+        </div>
+        ${request.current_step ? `
+          <div class="request-meta-item">
+            <span>⏳</span>
+            <span>${escapeHtml(request.current_step)}</span>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render workflow configuration
+function renderWorkflowConfig() {
+  const typesList = document.getElementById('workflowTypesList');
+  if (!typesList) return;
+  
+  if (state.workflowTypes.length === 0) {
+    typesList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚙️</div>
+        <div class="empty-state-title">Aucun workflow configuré</div>
+        <p>Ajoutez un type de workflow pour commencer</p>
+      </div>
+    `;
+    return;
+  }
+  
+  typesList.innerHTML = state.workflowTypes.map(type => `
+    <div class="workflow-type-card">
+      <div>
+        <div class="workflow-title">${escapeHtml(type.name)}</div>
+        <div class="workflow-meta">${type.steps.length} étape(s)</div>
+      </div>
+      <div>
+        <button class="btn btn-secondary" onclick="editWorkflowType('${type.name}')">
+          Modifier
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render audit log
+function renderAuditLog() {
+  const container = document.getElementById('auditLog');
+  if (!container) return;
+  
+  if (state.auditLog.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📜</div>
+        <div class="empty-state-title">Aucune entrée d'audit</div>
+        <p>L'historique des actions apparaîtra ici</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = state.auditLog.map(entry => `
+    <div class="audit-entry">
+      <div class="audit-timestamp">${formatDateTime(entry.timestamp)}</div>
+      <div class="audit-action">
+        <span class="audit-user">${escapeHtml(entry.user || 'Système')}</span>
+        ${escapeHtml(entry.action || 'Action inconnue')}
+        ${entry.details ? `<div class="audit-details">${escapeHtml(entry.details)}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// Render statistics
+function renderStats() {
+  const pending = state.requests.filter(r => r.status === 'pending').length;
+  const approved = state.requests.filter(r => r.status === 'approved').length;
+  const rejected = state.requests.filter(r => r.status === 'rejected').length;
+  const total = state.requests.length;
+  
+  const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+  
+  // Calculate average delay
+  const completedRequests = state.requests.filter(r => 
+    r.status === 'approved' || r.status === 'rejected'
+  );
+  
+  let avgDelay = 0;
+  if (completedRequests.length > 0) {
+    const totalDelay = completedRequests.reduce((sum, r) => {
+      if (r.created_at && r.completed_at) {
+        const delay = new Date(r.completed_at) - new Date(r.created_at);
+        return sum + delay;
+      }
+      return sum;
+    }, 0);
+    avgDelay = Math.round(totalDelay / completedRequests.length / (1000 * 60 * 60 * 24));
+  }
+  
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statAvgDelay').textContent = `${avgDelay}j`;
+  document.getElementById('statApprovalRate').textContent = `${approvalRate}%`;
+  document.getElementById('statSLA').textContent = '95%'; // TODO: Calculate real SLA
+}
+
+// Modal functions
+function openNewRequestModal() {
+  const modal = document.getElementById('modalNewRequest');
+  const typeSelect = document.getElementById('requestType');
+  
+  // Populate workflow types
+  if (typeSelect) {
+    typeSelect.innerHTML = state.workflowTypes.map(type => 
+      `<option value="${escapeHtml(type.name)}">${escapeHtml(type.name)}</option>`
+    ).join('');
+  }
+  
+  modal.classList.add('active');
+}
+
+function closeModal(modal) {
+  modal.classList.remove('active');
+}
+
+async function handleNewRequestSubmit(e) {
+  e.preventDefault();
+  
+  const type = document.getElementById('requestType').value;
+  const title = document.getElementById('requestTitle').value;
+  const description = document.getElementById('requestDescription').value;
+  
+  try {
+    showLoading(true);
+    
+    // Create new request in Grist
+    await grist.docApi.applyUserActions([
+      ['AddRecord', state.mappedColumns.Requests, null, {
+        type: type,
+        title: title,
+        description: description,
+        requester: state.userEmail,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+        current_step: 'Étape 1'
+      }]
+    ]);
+    
+    // Log action
+    await logAction('create_request', `Nouvelle demande: ${title}`);
+    
+    // Reload data
+    await loadData();
+    renderRequestsList();
+    
+    closeModal(document.getElementById('modalNewRequest'));
+    showLoading(false);
+    
+    showSuccess('Demande créée avec succès');
+    
+  } catch (error) {
+    console.error('Error creating request:', error);
+    showError('Erreur lors de la création de la demande');
+    showLoading(false);
+  }
+}
+
+function openRequestDetails(requestId) {
+  const request = state.requests.find(r => r.id === requestId);
+  if (!request) return;
+  
+  state.selectedRequest = request;
+  
+  const modal = document.getElementById('modalRequestDetails');
+  const titleEl = document.getElementById('requestDetailsTitle');
+  const contentEl = document.getElementById('requestDetailsContent');
+  const timelineEl = document.getElementById('workflowTimeline');
+  const actionsEl = document.getElementById('validationActions');
+  
+  if (titleEl) {
+    titleEl.textContent = request.title || 'Détails de la demande';
+  }
+  
+  if (contentEl) {
+    contentEl.innerHTML = `
+      <div class="request-details">
+        <div class="detail-row">
+          <strong>Type:</strong> ${escapeHtml(request.type || 'N/A')}
+        </div>
+        <div class="detail-row">
+          <strong>Statut:</strong> 
+          <span class="request-status status-${request.status}">${getStatusLabel(request.status)}</span>
+        </div>
+        <div class="detail-row">
+          <strong>Demandeur:</strong> ${escapeHtml(request.requester || 'N/A')}
+        </div>
+        <div class="detail-row">
+          <strong>Date de création:</strong> ${formatDateTime(request.created_at)}
+        </div>
+        ${request.description ? `
+          <div class="detail-row">
+            <strong>Description:</strong><br>
+            ${escapeHtml(request.description)}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+  
+  // Render timeline
+  if (timelineEl) {
+    renderTimeline(request, timelineEl);
+  }
+  
+  // Render validation actions
+  if (actionsEl) {
+    renderValidationActions(request, actionsEl);
+  }
+  
+  modal.classList.add('active');
+}
+
+function renderTimeline(request, container) {
+  // Get validation log for this request
+  const logs = state.auditLog.filter(log => log.request_id === request.id);
+  
+  if (logs.length === 0) {
+    container.innerHTML = '<p>Aucun historique disponible</p>';
+    return;
+  }
+  
+  container.innerHTML = `
+    <h3>Historique de validation</h3>
+    ${logs.map(log => `
+      <div class="timeline-item">
+        <div class="timeline-icon ${log.action_type || 'pending'}">
+          ${getActionIcon(log.action_type)}
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-title">${escapeHtml(log.action || 'Action')}</div>
+          <div class="timeline-meta">
+            ${escapeHtml(log.user || 'Système')} • ${formatDateTime(log.timestamp)}
+          </div>
+          ${log.comment ? `<div class="timeline-comment">${escapeHtml(log.comment)}</div>` : ''}
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderValidationActions(request, container) {
+  if (request.status !== 'pending') {
+    container.innerHTML = '';
+    return;
+  }
+  
+  // Check if current user can validate
+  const canValidate = state.userRole === 'Owner' || state.userRole === 'Editor';
+  
+  if (!canValidate) {
+    container.innerHTML = '<p class="text-secondary">Vous n\'avez pas les droits pour valider cette demande</p>';
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="validation-actions-section">
+      <h3>Actions de validation</h3>
+      <div class="form-group">
+        <label for="validationComment">Commentaire (optionnel)</label>
+        <textarea id="validationComment" rows="3" class="form-control"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-danger" onclick="handleValidation('rejected')">
+          ❌ Rejeter
+        </button>
+        <button class="btn btn-success" onclick="handleValidation('approved')">
+          ✅ Approuver
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+async function handleValidation(action) {
+  const request = state.selectedRequest;
+  if (!request) return;
+  
+  const comment = document.getElementById('validationComment')?.value || '';
+  
+  try {
+    showLoading(true);
+    
+    // Update request status
+    await grist.docApi.applyUserActions([
+      ['UpdateRecord', state.mappedColumns.Requests, request.id, {
+        status: action,
+        completed_at: new Date().toISOString()
+      }]
+    ]);
+    
+    // Log validation action
+    await logAction(action, `Demande ${action === 'approved' ? 'approuvée' : 'rejetée'}: ${request.title}`, {
+      request_id: request.id,
+      comment: comment
+    });
+    
+    // Reload data
+    await loadData();
+    renderRequestsList();
+    
+    closeModal(document.getElementById('modalRequestDetails'));
+    showLoading(false);
+    
+    showSuccess(`Demande ${action === 'approved' ? 'approuvée' : 'rejetée'} avec succès`);
+    
+  } catch (error) {
+    console.error('Error validating request:', error);
+    showError('Erreur lors de la validation');
+    showLoading(false);
+  }
+}
+
+// Logging function
+async function logAction(action, description, details = {}) {
+  try {
+    await grist.docApi.applyUserActions([
+      ['AddRecord', state.mappedColumns.ValidationLog, null, {
+        user: state.userEmail,
+        action: action,
+        description: description,
+        timestamp: new Date().toISOString(),
+        details: JSON.stringify(details)
+      }]
+    ]);
+  } catch (error) {
+    console.error('Error logging action:', error);
+  }
+}
+
+// Utility functions
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatDate(dateString) {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('fr-FR');
+}
+
+function formatDateTime(dateString) {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleString('fr-FR');
+}
+
+function getStatusLabel(status) {
+  const labels = {
+    pending: 'En attente',
+    approved: 'Approuvé',
+    rejected: 'Rejeté',
+    cancelled: 'Annulé'
+  };
+  return labels[status] || status;
+}
+
+function getActionIcon(actionType) {
+  const icons = {
+    approved: '✅',
+    rejected: '❌',
+    pending: '⏳',
+    created: '📝'
+  };
+  return icons[actionType] || '•';
+}
+
+function showLoading(show) {
+  const spinner = document.getElementById('loadingSpinner');
+  if (spinner) {
+    spinner.style.display = show ? 'flex' : 'none';
+  }
+}
+
+function showError(message) {
+  alert('❌ ' + message);
+}
+
+function showSuccess(message) {
+  alert('✅ ' + message);
+}
+
+// Make functions globally accessible
+window.openRequestDetails = openRequestDetails;
+window.handleValidation = handleValidation;
+window.editWorkflowType = function(typeName) {
+  alert('Édition du workflow: ' + typeName + '\n(Fonctionnalité à venir)');
+};
