@@ -1298,7 +1298,8 @@ async function handleNewRequestSubmit(e) {
   try {
     showLoading(true);
     
-    // Create request
+    // Create request with current timestamp
+    const now = new Date().toISOString();
     await grist.docApi.applyUserActions([
       ['AddRecord', REQUESTS_TABLE, null, {
         Type: type,
@@ -1307,7 +1308,8 @@ async function handleNewRequestSubmit(e) {
         Requester: state.userEmail,
         Status: 'pending',
         Current_Step: 'Étape 1',
-        Priority: 'medium'
+        Priority: 'medium',
+        Created_At: now
       }]
     ]);
     
