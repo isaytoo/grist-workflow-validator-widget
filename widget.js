@@ -1190,28 +1190,32 @@ function openRequestDetails(requestId) {
   const timelineContainer = document.getElementById('workflowTimeline');
   const actionsContainer = document.getElementById('validationActions');
   
-  // Render request details
+  // Render request details with modern layout
   detailsContainer.innerHTML = `
-    <div class="detail-row">
-      <span class="detail-label">${t('type')}:</span>
-      <span>${escapeHtml(request.Type || '')}</span>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      <div class="detail-row">
+        <span class="detail-label">📋 ${t('type')}</span>
+        <div style="font-size: 1.1em; font-weight: 600; color: var(--primary);">${escapeHtml(request.Type || '')}</div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">🏷️ ${t('status')}</span>
+        <span class="request-status status-${request.Status}" style="display: inline-block; margin-top: 4px;">${getStatusLabel(request.Status)}</span>
+      </div>
     </div>
-    <div class="detail-row">
-      <span class="detail-label">${t('status')}:</span>
-      <span class="request-status status-${request.Status}">${getStatusLabel(request.Status)}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">${t('requester')}:</span>
-      <span>${escapeHtml(request.Requester || '')}</span>
-    </div>
-    <div class="detail-row">
-      <span class="detail-label">${t('createdAt')}:</span>
-      <span>${formatDateTime(request.Created_At)}</span>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 20px;">
+      <div class="detail-row">
+        <span class="detail-label">👤 ${t('requester')}</span>
+        <div style="font-size: 1em; color: var(--text-primary);">${escapeHtml(request.Requester || '')}</div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">📅 ${t('createdAt')}</span>
+        <div style="font-size: 1em; color: var(--text-primary);">${formatDateTime(request.Created_At)}</div>
+      </div>
     </div>
     ${request.Description ? `
-      <div class="detail-row">
-        <span class="detail-label">${t('description')}:</span>
-        <p>${escapeHtml(request.Description)}</p>
+      <div class="detail-row" style="grid-column: 1 / -1;">
+        <span class="detail-label">📝 ${t('description')}</span>
+        <p style="white-space: pre-wrap;">${escapeHtml(request.Description)}</p>
       </div>
     ` : ''}
   `;
@@ -1230,22 +1234,28 @@ function renderTimeline(request, container) {
   const logs = state.auditLog.filter(log => log.Request_Id === request.id);
   
   if (logs.length === 0) {
-    container.innerHTML = `<p>${t('noHistory')}</p>`;
+    container.innerHTML = `
+      <h3>Historique</h3>
+      <p style="text-align: center; padding: 24px; color: var(--text-secondary);">${t('noHistory')}</p>
+    `;
     return;
   }
   
-  container.innerHTML = logs.map(log => `
-    <div class="timeline-item">
-      <div class="timeline-icon">${getActionIcon(log.Action)}</div>
-      <div class="timeline-content">
-        <div class="timeline-title">${escapeHtml(log.Description || '')}</div>
-        <div class="timeline-meta">
-          ${escapeHtml(log.User || '')} • ${formatDateTime(log.Timestamp)}
+  container.innerHTML = `
+    <h3>Historique</h3>
+    ${logs.map(log => `
+      <div class="timeline-item">
+        <div class="timeline-icon">${getActionIcon(log.Action)}</div>
+        <div class="timeline-content">
+          <div class="timeline-title">${escapeHtml(log.Description || '')}</div>
+          <div class="timeline-meta">
+            👤 ${escapeHtml(log.User || '')} • 🕐 ${formatDateTime(log.Timestamp)}
+          </div>
+          ${log.Comment ? `<div class="timeline-comment">💬 ${escapeHtml(log.Comment)}</div>` : ''}
         </div>
-        ${log.Comment ? `<div class="timeline-comment">${escapeHtml(log.Comment)}</div>` : ''}
       </div>
-    </div>
-  `).join('');
+    `).join('')}
+  `;
 }
 
 function renderValidationActions(request, container) {

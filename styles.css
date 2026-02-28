@@ -495,7 +495,7 @@ body {
   color: var(--primary);
 }
 
-/* Modal */
+/* Modals */
 .modal {
   display: none;
   position: fixed;
@@ -503,11 +503,12 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   z-index: 1000;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .modal.active {
@@ -516,12 +517,13 @@ body {
 
 .modal-content {
   background: var(--bg-primary);
-  border-radius: 12px;
+  border-radius: 16px;
+  width: 90%;
   max-width: 600px;
-  width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.3s ease-out;
 }
 
 .modal-large {
@@ -529,40 +531,62 @@ body {
 }
 
 .modal-header {
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .modal-header h2 {
-  font-size: 1.3em;
+  margin: 0;
+  font-size: 1.5em;
   font-weight: 600;
+  color: white;
 }
 
 .modal-close {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
   font-size: 1.5em;
   cursor: pointer;
-  color: var(--text-secondary);
+  color: white;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 8px;
+  transition: all 0.2s;
 }
 
 .modal-close:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 28px;
+  overflow-y: auto;
+  max-height: calc(90vh - 100px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Forms */
@@ -666,6 +690,106 @@ body {
 .timeline-meta {
   font-size: 0.85em;
   color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.timeline-comment {
+  margin-top: 8px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.9em;
+  color: var(--text-primary);
+  border-left: 3px solid var(--primary);
+}
+
+/* Request Details Styling */
+.detail-row {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  border-left: 4px solid var(--primary);
+}
+
+.detail-label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.detail-row p {
+  margin: 8px 0 0 0;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.workflow-timeline h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workflow-timeline h3::before {
+  content: '📋';
+  font-size: 1.3em;
+}
+
+.validation-actions {
+  margin-top: 32px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+}
+
+.validation-form h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.validation-form h3::before {
+  content: '✍️';
+  font-size: 1.3em;
+}
+
+.validation-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.validation-buttons .btn {
+  flex: 1;
+  padding: 14px 24px;
+  font-size: 1em;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.validation-buttons .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.no-permission {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 /* Spinner */
@@ -679,7 +803,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 9999;
 }
 
 .spinner {
