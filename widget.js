@@ -1407,29 +1407,31 @@ function renderWorkflowConfig() {
     <div class="workflow-type-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 20px; position: relative; overflow: hidden; cursor: pointer;" onclick="selectWorkflowForDisplay('${escapeHtml(type.name)}')">
       <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.1;">⚙️</div>
       <div style="position: relative; z-index: 1;">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          <span style="font-size: 2em;">📋</span>
-          <div>
-            <div class="workflow-title" style="font-size: 1.3em; font-weight: 700; color: white;">${escapeHtml(type.name)}</div>
-            <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
-              <span style="display: flex; align-items: center; gap: 6px;">
-                <span>🔢</span>
-                <span>${type.steps.length} ${type.steps.length > 1 ? 'étapes' : 'étape'}</span>
-              </span>
-              <span style="display: flex; align-items: center; gap: 6px;">
-                <span>⏱️</span>
-                <span>${type.steps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)}h SLA total</span>
-              </span>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 2em;">📋</span>
+            <div>
+              <div class="workflow-title" style="font-size: 1.3em; font-weight: 700; color: white;">${escapeHtml(type.name)}</div>
+              <div style="display: flex; align-items: center; gap: 16px; margin-top: 8px; font-size: 0.9em; opacity: 0.9;">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  <span>🔢</span>
+                  <span>${type.steps.length} ${type.steps.length > 1 ? 'étapes' : 'étape'}</span>
+                </span>
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  <span>⏱️</span>
+                  <span>${type.steps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)}h SLA total</span>
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-        <div style="display: flex; gap: 8px; margin-top: 16px;">
-          <button class="btn" onclick="event.stopPropagation(); editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
-            ✏️ ${t('modify')}
-          </button>
-          <button class="btn" onclick="event.stopPropagation(); viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
-            👁️ Voir les étapes
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn" onclick="event.stopPropagation(); editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; white-space: nowrap;">
+              ✏️ ${t('modify')}
+            </button>
+            <button class="btn" onclick="event.stopPropagation(); viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; white-space: nowrap;">
+              👁️ Voir les étapes
+            </button>
+          </div>
         </div>
       </div>
     </div>
