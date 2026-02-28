@@ -5,6 +5,141 @@
  * https://github.com/isaytoo/grist-workflow-validator-widget
  */
 
+// Language support
+let currentLang = 'en';
+
+const i18n = {
+  en: {
+    appTitle: 'Workflow Validator',
+    userRole: 'Role',
+    tabRequests: 'Requests',
+    tabWorkflow: 'Configuration',
+    tabHistory: 'History',
+    tabStats: 'Statistics',
+    newRequest: 'New Request',
+    allStatuses: 'All statuses',
+    allTypes: 'All types',
+    statusPending: 'Pending',
+    statusApproved: 'Approved',
+    statusRejected: 'Rejected',
+    statusCancelled: 'Cancelled',
+    noRequests: 'No requests',
+    noRequestsDesc: 'Create your first request to get started',
+    workflowConfig: 'Workflow configuration',
+    workflowTypes: 'Request types',
+    addWorkflowType: 'Add type',
+    noWorkflows: 'No workflow configured',
+    noWorkflowsDesc: 'Add a workflow type to get started',
+    validationSteps: 'Validation steps',
+    auditLog: 'Audit log',
+    noAudit: 'No audit entries',
+    noAuditDesc: 'Action history will appear here',
+    dashboard: 'Dashboard',
+    pendingRequests: 'Pending requests',
+    avgDelay: 'Average delay',
+    approvalRate: 'Approval rate',
+    slaRespected: 'SLA respected',
+    modalNewRequest: 'New request',
+    requestType: 'Request type *',
+    requestTitle: 'Title *',
+    requestDescription: 'Description',
+    cancel: 'Cancel',
+    submit: 'Submit',
+    requestDetails: 'Request details',
+    type: 'Type',
+    status: 'Status',
+    requester: 'Requester',
+    createdAt: 'Created at',
+    description: 'Description',
+    validationHistory: 'Validation history',
+    noHistory: 'No history available',
+    validationActions: 'Validation actions',
+    noPermission: 'You do not have permission to validate this request',
+    comment: 'Comment (optional)',
+    reject: 'Reject',
+    approve: 'Approve',
+    requestCreated: 'Request created successfully',
+    requestApproved: 'Request approved successfully',
+    requestRejected: 'Request rejected successfully',
+    error: 'An error occurred',
+    steps: 'step(s)',
+    modify: 'Modify',
+    tablesCreated: 'Tables created automatically',
+    autoSetup: 'Auto-setup in progress...',
+    setupComplete: 'Setup complete!'
+  },
+  fr: {
+    appTitle: 'Validateur de Workflow',
+    userRole: 'Rôle',
+    tabRequests: 'Demandes',
+    tabWorkflow: 'Configuration',
+    tabHistory: 'Historique',
+    tabStats: 'Statistiques',
+    newRequest: 'Nouvelle demande',
+    allStatuses: 'Tous les statuts',
+    allTypes: 'Tous les types',
+    statusPending: 'En attente',
+    statusApproved: 'Approuvé',
+    statusRejected: 'Rejeté',
+    statusCancelled: 'Annulé',
+    noRequests: 'Aucune demande',
+    noRequestsDesc: 'Créez votre première demande pour commencer',
+    workflowConfig: 'Configuration des circuits de validation',
+    workflowTypes: 'Types de demandes',
+    addWorkflowType: 'Ajouter un type',
+    noWorkflows: 'Aucun workflow configuré',
+    noWorkflowsDesc: 'Ajoutez un type de workflow pour commencer',
+    validationSteps: 'Étapes de validation',
+    auditLog: 'Journal d\'audit',
+    noAudit: 'Aucune entrée d\'audit',
+    noAuditDesc: 'L\'historique des actions apparaîtra ici',
+    dashboard: 'Tableau de bord',
+    pendingRequests: 'Demandes en attente',
+    avgDelay: 'Délai moyen',
+    approvalRate: 'Taux d\'approbation',
+    slaRespected: 'SLA respectés',
+    modalNewRequest: 'Nouvelle demande',
+    requestType: 'Type de demande *',
+    requestTitle: 'Titre *',
+    requestDescription: 'Description',
+    cancel: 'Annuler',
+    submit: 'Soumettre',
+    requestDetails: 'Détails de la demande',
+    type: 'Type',
+    status: 'Statut',
+    requester: 'Demandeur',
+    createdAt: 'Date de création',
+    description: 'Description',
+    validationHistory: 'Historique de validation',
+    noHistory: 'Aucun historique disponible',
+    validationActions: 'Actions de validation',
+    noPermission: 'Vous n\'avez pas les droits pour valider cette demande',
+    comment: 'Commentaire (optionnel)',
+    reject: 'Rejeter',
+    approve: 'Approuver',
+    requestCreated: 'Demande créée avec succès',
+    requestApproved: 'Demande approuvée avec succès',
+    requestRejected: 'Demande rejetée avec succès',
+    error: 'Une erreur est survenue',
+    steps: 'étape(s)',
+    modify: 'Modifier',
+    tablesCreated: 'Tables créées automatiquement',
+    autoSetup: 'Configuration automatique en cours...',
+    setupComplete: 'Configuration terminée !'
+  }
+};
+
+function t(key) {
+  return i18n[currentLang][key] || key;
+}
+
+// Table names
+const REQUESTS_TABLE = 'WF_Requests';
+const WORKFLOW_STEPS_TABLE = 'WF_Steps';
+const VALIDATION_LOG_TABLE = 'WF_ValidationLog';
+const DELEGATIONS_TABLE = 'WF_Delegations';
+const USER_ROLES_TABLE = 'WF_UserRoles';
+
 // Global state
 const state = {
   userEmail: null,
@@ -25,22 +160,120 @@ const state = {
 
 // Initialize widget
 grist.ready({
-  requiredAccess: 'full',
-  columns: [
-    { name: 'Requests', title: 'Table des demandes', optional: false },
-    { name: 'WorkflowSteps', title: 'Table des étapes workflow', optional: false },
-    { name: 'ValidationLog', title: 'Table du journal de validation', optional: false },
-    { name: 'Delegations', title: 'Table des délégations', optional: true },
-    { name: 'UserRoles', title: 'Table des rôles utilisateurs', optional: true }
-  ]
+  requiredAccess: 'full'
 });
 
-grist.onRecord(function(record, mappings) {
-  console.log('Record received:', record);
-  console.log('Mappings:', mappings);
-  state.mappedColumns = mappings;
-  init();
+grist.onRecords(async function(records) {
+  console.log('Records received:', records);
+  await ensureTablesExist();
+  await init();
 });
+
+// Auto-setup: Create required tables if they don't exist
+async function ensureTablesExist() {
+  try {
+    const tables = await grist.docApi.listTables();
+    const existingTables = tables.map(t => t.id);
+    
+    console.log('Existing tables:', existingTables);
+    
+    // Create Requests table
+    if (!existingTables.includes(REQUESTS_TABLE)) {
+      console.log('Creating Requests table...');
+      await grist.docApi.applyUserActions([
+        ['AddTable', REQUESTS_TABLE, [
+          { id: 'Type', type: 'Text' },
+          { id: 'Title', type: 'Text' },
+          { id: 'Description', type: 'Text' },
+          { id: 'Requester', type: 'Text' },
+          { id: 'Status', type: 'Choice', widgetOptions: JSON.stringify({ choices: ['pending', 'approved', 'rejected', 'cancelled'] }) },
+          { id: 'Created_At', type: 'DateTime', isFormula: true, formula: 'NOW()' },
+          { id: 'Completed_At', type: 'DateTime' },
+          { id: 'Current_Step', type: 'Text' },
+          { id: 'Amount', type: 'Numeric' },
+          { id: 'Priority', type: 'Choice', widgetOptions: JSON.stringify({ choices: ['low', 'medium', 'high'] }) }
+        ]]
+      ]);
+    }
+    
+    // Create WorkflowSteps table
+    if (!existingTables.includes(WORKFLOW_STEPS_TABLE)) {
+      console.log('Creating WorkflowSteps table...');
+      await grist.docApi.applyUserActions([
+        ['AddTable', WORKFLOW_STEPS_TABLE, [
+          { id: 'Workflow_Type', type: 'Text' },
+          { id: 'Step_Number', type: 'Int' },
+          { id: 'Step_Name', type: 'Text' },
+          { id: 'Validator_Role', type: 'Text' },
+          { id: 'Validator_Email', type: 'Text' },
+          { id: 'SLA_Hours', type: 'Int' },
+          { id: 'Is_Parallel', type: 'Bool' },
+          { id: 'Condition', type: 'Text' }
+        ]]
+      ]);
+    }
+    
+    // Create ValidationLog table
+    if (!existingTables.includes(VALIDATION_LOG_TABLE)) {
+      console.log('Creating ValidationLog table...');
+      await grist.docApi.applyUserActions([
+        ['AddTable', VALIDATION_LOG_TABLE, [
+          { id: 'Request_Id', type: 'Ref:' + REQUESTS_TABLE },
+          { id: 'User', type: 'Text' },
+          { id: 'Action', type: 'Text' },
+          { id: 'Description', type: 'Text' },
+          { id: 'Timestamp', type: 'DateTime', isFormula: true, formula: 'NOW()' },
+          { id: 'Details', type: 'Text' },
+          { id: 'Comment', type: 'Text' }
+        ]]
+      ]);
+    }
+    
+    // Create Delegations table (optional)
+    if (!existingTables.includes(DELEGATIONS_TABLE)) {
+      console.log('Creating Delegations table...');
+      await grist.docApi.applyUserActions([
+        ['AddTable', DELEGATIONS_TABLE, [
+          { id: 'Delegator', type: 'Text' },
+          { id: 'Delegate', type: 'Text' },
+          { id: 'Start_Date', type: 'Date' },
+          { id: 'End_Date', type: 'Date' },
+          { id: 'Workflow_Type', type: 'Text' },
+          { id: 'Is_Active', type: 'Bool', isFormula: true, formula: 'from datetime import date\ntoday = date.today()\nreturn $Start_Date <= today <= $End_Date' }
+        ]]
+      ]);
+    }
+    
+    // Create UserRoles table (optional)
+    if (!existingTables.includes(USER_ROLES_TABLE)) {
+      console.log('Creating UserRoles table...');
+      await grist.docApi.applyUserActions([
+        ['AddTable', USER_ROLES_TABLE, [
+          { id: 'Email', type: 'Text' },
+          { id: 'Role', type: 'Choice', widgetOptions: JSON.stringify({ choices: ['Owner', 'Editor', 'Viewer'] }) },
+          { id: 'Department', type: 'Text' },
+          { id: 'Manager_Email', type: 'Text' }
+        ]]
+      ]);
+    }
+    
+    // Update state with table names
+    state.mappedColumns = {
+      requests: REQUESTS_TABLE,
+      workflowSteps: WORKFLOW_STEPS_TABLE,
+      validationLog: VALIDATION_LOG_TABLE,
+      delegations: DELEGATIONS_TABLE,
+      userRoles: USER_ROLES_TABLE
+    };
+    
+    console.log('Tables setup complete');
+    showSuccess(t('tablesCreated'));
+    
+  } catch (error) {
+    console.error('Error ensuring tables exist:', error);
+    // Continue anyway - tables might already exist
+  }
+}
 
 // Initialize application
 async function init() {
