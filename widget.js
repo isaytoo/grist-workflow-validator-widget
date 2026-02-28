@@ -1185,6 +1185,8 @@ window.closeWorkflowStepsModal = function() {
 // Render workflow configuration
 function renderWorkflowConfig() {
   const typesList = document.getElementById('workflowTypesList');
+  const stepsCanvas = document.getElementById('workflowStepsCanvas');
+  
   if (!typesList) return;
   
   if (state.workflowTypes.length === 0) {
@@ -1195,11 +1197,12 @@ function renderWorkflowConfig() {
         <p>${t('noWorkflowsDesc')}</p>
       </div>
     `;
+    if (stepsCanvas) stepsCanvas.innerHTML = '';
     return;
   }
   
   typesList.innerHTML = state.workflowTypes.map(type => `
-    <div class="workflow-type-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 20px; position: relative; overflow: hidden;">
+    <div class="workflow-type-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 20px; position: relative; overflow: hidden; cursor: pointer;" onclick="selectWorkflowForDisplay('${escapeHtml(type.name)}')">
       <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.1;">⚙️</div>
       <div style="position: relative; z-index: 1;">
         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
@@ -1219,16 +1222,89 @@ function renderWorkflowConfig() {
           </div>
         </div>
         <div style="display: flex; gap: 8px; margin-top: 16px;">
-          <button class="btn" onclick="editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
+          <button class="btn" onclick="event.stopPropagation(); editWorkflowType('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
             ✏️ ${t('modify')}
           </button>
-          <button class="btn" onclick="viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
+          <button class="btn" onclick="event.stopPropagation(); viewWorkflowSteps('${escapeHtml(type.name)}')" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); flex: 1;">
             👁️ Voir les étapes
           </button>
         </div>
       </div>
     </div>
   `).join('');
+  
+  // Display first workflow by default
+  if (state.workflowTypes.length > 0 && stepsCanvas) {
+    renderWorkflowSteps(state.workflowTypes[0].name);
+  }
+}
+
+// Select and display workflow steps
+window.selectWorkflowForDisplay = function(workflowName) {
+  renderWorkflowSteps(workflowName);
+}
+
+// Render visual workflow steps diagram
+function renderWorkflowSteps(workflowName) {
+  const canvas = document.getElementById('workflowStepsCanvas');
+  if (!canvas) return;
+  
+  const workflow = state.workflowTypes.find(w => w.name === workflowName);
+  if (!workflow) {
+    canvas.innerHTML = '<p style="text-align: center; color: var(--text-secondary);">Sélectionnez un workflow ci-dessus</p>';
+    return;
+  }
+  
+  const sortedSteps = workflow.steps.sort((a, b) => a.Step_Number - b.Step_Number);
+  
+  canvas.innerHTML = `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <h4 style="margin: 0; color: var(--text-primary); font-size: 1.2em;">📋 ${escapeHtml(workflowName)}</h4>
+      <p style="margin: 8px 0 0 0; color: var(--text-secondary); font-size: 0.9em;">Circuit de validation en ${sortedSteps.length} étape(s)</p>
+    </div>
+    
+    <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 20px;">
+      ${sortedSteps.map((step, index) => `
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-width: 200px; position: relative;">
+            <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1em; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+              ${step.Step_Number}
+            </div>
+            <div style="margin-top: 16px;">
+              <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px; text-align: center;">
+                ${escapeHtml(step.Step_Name)}
+              </div>
+              <div style="font-size: 0.85em; color: var(--text-secondary); text-align: center; margin-bottom: 8px;">
+                👤 ${escapeHtml(step.Validator_Role || 'N/A')}
+              </div>
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.8em; color: var(--text-secondary); padding: 6px; background: var(--bg-secondary); border-radius: 6px;">
+                <span>⏱️ ${step.SLA_Hours}h</span>
+                ${step.Is_Parallel ? '<span style="color: #f59e0b;">🔀</span>' : '<span style="color: #10b981;">➡️</span>'}
+              </div>
+              ${step.Condition ? `
+                <div style="margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 6px; font-size: 0.75em; text-align: center;">
+                  🎯 ${escapeHtml(step.Condition)}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          ${index < sortedSteps.length - 1 ? `
+            <div style="color: var(--primary); font-size: 2em; font-weight: 700;">
+              ${sortedSteps[index + 1].Is_Parallel ? '⇉' : '→'}
+            </div>
+          ` : ''}
+        </div>
+      `).join('')}
+    </div>
+    
+    <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 10px; text-align: center;">
+      <div style="font-size: 0.9em; color: var(--text-secondary);">
+        <strong>SLA total :</strong> ${sortedSteps.reduce((sum, s) => sum + (s.SLA_Hours || 0), 0)} heures • 
+        <strong>Étapes parallèles :</strong> ${sortedSteps.filter(s => s.Is_Parallel).length} • 
+        <strong>Conditions :</strong> ${sortedSteps.filter(s => s.Condition).length}
+      </div>
+    </div>
+  `;
 }
 
 // Render audit log
