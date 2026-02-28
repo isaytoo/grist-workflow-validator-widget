@@ -827,18 +827,38 @@ function parseWorkflowTypes(stepsData) {
 function getActiveDelegation(validatorEmail, workflowType = null) {
   const now = new Date();
   
-  return state.delegations.find(delegation => {
+  console.log('🔍 Checking delegation for:', {
+    validatorEmail,
+    workflowType,
+    currentUser: state.userEmail,
+    now: now.toISOString(),
+    totalDelegations: state.delegations.length
+  });
+  
+  const result = state.delegations.find(delegation => {
+    console.log('  Checking delegation:', delegation);
+    
     // Check if delegation is for this validator
-    if (delegation.Delegator !== validatorEmail) return false;
+    if (delegation.Delegator !== validatorEmail) {
+      console.log('  ❌ Delegator mismatch:', delegation.Delegator, '!==', validatorEmail);
+      return false;
+    }
     
     // Check if delegation is for current user
-    if (delegation.Delegate !== state.userEmail) return false;
+    if (delegation.Delegate !== state.userEmail) {
+      console.log('  ❌ Delegate mismatch:', delegation.Delegate, '!==', state.userEmail);
+      return false;
+    }
     
     // Check if delegation is active
-    if (delegation.Is_Active === false) return false;
+    if (delegation.Is_Active === false) {
+      console.log('  ❌ Not active');
+      return false;
+    }
     
     // Check workflow type if specified
     if (workflowType && delegation.Workflow_Type && delegation.Workflow_Type !== workflowType) {
+      console.log('  ❌ Workflow type mismatch:', delegation.Workflow_Type, '!==', workflowType);
       return false;
     }
     
@@ -846,11 +866,27 @@ function getActiveDelegation(validatorEmail, workflowType = null) {
     const startDate = delegation.Start_Date ? new Date(delegation.Start_Date) : null;
     const endDate = delegation.End_Date ? new Date(delegation.End_Date) : null;
     
-    if (startDate && now < startDate) return false;
-    if (endDate && now > endDate) return false;
+    console.log('  Date check:', {
+      startDate: startDate?.toISOString(),
+      endDate: endDate?.toISOString(),
+      now: now.toISOString()
+    });
     
+    if (startDate && now < startDate) {
+      console.log('  ❌ Too early:', now, '<', startDate);
+      return false;
+    }
+    if (endDate && now > endDate) {
+      console.log('  ❌ Too late:', now, '>', endDate);
+      return false;
+    }
+    
+    console.log('  ✅ Delegation MATCH!');
     return true;
   });
+  
+  console.log('🔍 Delegation result:', result || 'No match');
+  return result;
 }
 
 // Check if current user can validate (either directly or via delegation)
