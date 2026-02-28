@@ -415,19 +415,22 @@ async function detectUserRole() {
 
 async function getUserEmail() {
   try {
-    // Try to get email from UserRoles table if it exists
-    if (state.mappedColumns.UserRoles) {
-      const accessToken = await grist.docApi.getAccessToken({ readOnly: true });
-      const docId = await grist.docApi.getDocName();
-      
-      // This would use the REST API with the access token
-      // For now, return a placeholder
-      return 'user@example.com';
+    // Get user info from Grist
+    const user = await grist.user;
+    if (user && user.Email) {
+      return user.Email;
     }
     
-    // Fallback: try to get from Grist user info
-    const user = await grist.getUser();
-    return user?.email || 'user@example.com';
+    // Fallback: try to get from access token
+    try {
+      const accessToken = await grist.docApi.getAccessToken({ readOnly: true });
+      // Access token contains user info but we can't decode it here
+      // Return a generic email for now
+      return 'user@example.com';
+    } catch (e) {
+      console.log('Could not get access token:', e);
+      return 'user@example.com';
+    }
     
   } catch (error) {
     console.error('Error getting user email:', error);
