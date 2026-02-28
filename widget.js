@@ -702,20 +702,20 @@ function updateUserDisplay() {
 async function loadData() {
   try {
     // Load requests
-    if (state.mappedColumns.Requests) {
-      const requestsData = await grist.docApi.fetchTable(state.mappedColumns.Requests);
+    if (state.mappedColumns.requests) {
+      const requestsData = await grist.docApi.fetchTable(state.mappedColumns.requests);
       state.requests = parseTableData(requestsData);
     }
     
     // Load workflow types
-    if (state.mappedColumns.WorkflowSteps) {
-      const stepsData = await grist.docApi.fetchTable(state.mappedColumns.WorkflowSteps);
+    if (state.mappedColumns.workflowSteps) {
+      const stepsData = await grist.docApi.fetchTable(state.mappedColumns.workflowSteps);
       state.workflowTypes = parseWorkflowTypes(stepsData);
     }
     
     // Load audit log
-    if (state.mappedColumns.ValidationLog) {
-      const logData = await grist.docApi.fetchTable(state.mappedColumns.ValidationLog);
+    if (state.mappedColumns.validationLog) {
+      const logData = await grist.docApi.fetchTable(state.mappedColumns.validationLog);
       state.auditLog = parseTableData(logData);
     }
     
@@ -745,7 +745,7 @@ function parseWorkflowTypes(stepsData) {
   const records = parseTableData(stepsData);
   
   records.forEach(step => {
-    const type = step.workflow_type || 'default';
+    const type = step.Workflow_Type || 'default';
     if (!types[type]) {
       types[type] = {
         name: type,
@@ -868,11 +868,11 @@ function renderRequestsList() {
   let filteredRequests = state.requests;
   
   if (filterStatus) {
-    filteredRequests = filteredRequests.filter(r => r.status === filterStatus);
+    filteredRequests = filteredRequests.filter(r => r.Status === filterStatus);
   }
   
   if (filterType) {
-    filteredRequests = filteredRequests.filter(r => r.type === filterType);
+    filteredRequests = filteredRequests.filter(r => r.Type === filterType);
   }
   
   if (filteredRequests.length === 0) {
@@ -1017,9 +1017,9 @@ function renderAuditLog() {
 
 // Render statistics
 function renderStats() {
-  const pending = state.requests.filter(r => r.status === 'pending').length;
-  const approved = state.requests.filter(r => r.status === 'approved').length;
-  const rejected = state.requests.filter(r => r.status === 'rejected').length;
+  const pending = state.requests.filter(r => r.Status === 'pending').length;
+  const approved = state.requests.filter(r => r.Status === 'approved').length;
+  const rejected = state.requests.filter(r => r.Status === 'rejected').length;
   const total = state.requests.length;
   
   const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
@@ -1073,37 +1073,41 @@ async function handleNewRequestSubmit(e) {
   const title = document.getElementById('requestTitle').value;
   const description = document.getElementById('requestDescription').value;
   
+  if (!type || !title) {
+    showError(t('error') + ': ' + 'Veuillez remplir tous les champs obligatoires');
+    return;
+  }
+  
   try {
     showLoading(true);
     
-    // Create new request in Grist
+    // Create request
     await grist.docApi.applyUserActions([
-      ['AddRecord', state.mappedColumns.Requests, null, {
-        type: type,
-        title: title,
-        description: description,
-        requester: state.userEmail,
-        status: 'pending',
-        created_at: new Date().toISOString(),
-        current_step: 'Étape 1'
+      ['AddRecord', REQUESTS_TABLE, null, {
+        Type: type,
+        Title: title,
+        Description: description,
+        Requester: state.userEmail,
+        Status: 'pending',
+        Current_Step: 'Étape 1',
+        Priority: 'medium'
       }]
     ]);
     
     // Log action
-    await logAction('create_request', `Nouvelle demande: ${title}`);
+    await logAction('create_request', `Nouvelle demande: ${title}`, { type, title });
+    
+    showSuccess(t('requestCreated'));
+    closeModal(document.getElementById('modalNewRequest'));
     
     // Reload data
     await loadData();
     renderRequestsList();
     
-    closeModal(document.getElementById('modalNewRequest'));
-    showLoading(false);
-    
-    showSuccess('Demande créée avec succès');
-    
   } catch (error) {
     console.error('Error creating request:', error);
-    showError('Erreur lors de la création de la demande');
+    showError(t('error'));
+  } finally {
     showLoading(false);
   }
 }
@@ -1115,109 +1119,93 @@ function openRequestDetails(requestId) {
   state.selectedRequest = request;
   
   const modal = document.getElementById('modalRequestDetails');
-  const titleEl = document.getElementById('requestDetailsTitle');
-  const contentEl = document.getElementById('requestDetailsContent');
-  const timelineEl = document.getElementById('workflowTimeline');
-  const actionsEl = document.getElementById('validationActions');
+  const detailsContainer = document.getElementById('requestDetailsContent');
+  const timelineContainer = document.getElementById('requestTimeline');
+  const actionsContainer = document.getElementById('requestActions');
   
-  if (titleEl) {
-    titleEl.textContent = request.title || 'Détails de la demande';
-  }
-  
-  if (contentEl) {
-    contentEl.innerHTML = `
-      <div class="request-details">
-        <div class="detail-row">
-          <strong>Type:</strong> ${escapeHtml(request.type || 'N/A')}
-        </div>
-        <div class="detail-row">
-          <strong>Statut:</strong> 
-          <span class="request-status status-${request.status}">${getStatusLabel(request.status)}</span>
-        </div>
-        <div class="detail-row">
-          <strong>Demandeur:</strong> ${escapeHtml(request.requester || 'N/A')}
-        </div>
-        <div class="detail-row">
-          <strong>Date de création:</strong> ${formatDateTime(request.created_at)}
-        </div>
-        ${request.description ? `
-          <div class="detail-row">
-            <strong>Description:</strong><br>
-            ${escapeHtml(request.description)}
-          </div>
-        ` : ''}
+  // Render request details
+  detailsContainer.innerHTML = `
+    <div class="detail-row">
+      <span class="detail-label">${t('type')}:</span>
+      <span>${escapeHtml(request.Type || '')}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">${t('status')}:</span>
+      <span class="request-status status-${request.Status}">${getStatusLabel(request.Status)}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">${t('requester')}:</span>
+      <span>${escapeHtml(request.Requester || '')}</span>
+    </div>
+    <div class="detail-row">
+      <span class="detail-label">${t('createdAt')}:</span>
+      <span>${formatDateTime(request.Created_At)}</span>
+    </div>
+    ${request.Description ? `
+      <div class="detail-row">
+        <span class="detail-label">${t('description')}:</span>
+        <p>${escapeHtml(request.Description)}</p>
       </div>
-    `;
-  }
+    ` : ''}
+  `;
   
   // Render timeline
-  if (timelineEl) {
-    renderTimeline(request, timelineEl);
-  }
+  renderTimeline(request, timelineContainer);
   
   // Render validation actions
-  if (actionsEl) {
-    renderValidationActions(request, actionsEl);
-  }
+  renderValidationActions(request, actionsContainer);
   
   modal.classList.add('active');
 }
 
 function renderTimeline(request, container) {
   // Get validation log for this request
-  const logs = state.auditLog.filter(log => log.request_id === request.id);
+  const logs = state.auditLog.filter(log => log.Request_Id === request.id);
   
   if (logs.length === 0) {
-    container.innerHTML = '<p>Aucun historique disponible</p>';
+    container.innerHTML = `<p>${t('noHistory')}</p>`;
     return;
   }
   
-  container.innerHTML = `
-    <h3>Historique de validation</h3>
-    ${logs.map(log => `
-      <div class="timeline-item">
-        <div class="timeline-icon ${log.action_type || 'pending'}">
-          ${getActionIcon(log.action_type)}
+  container.innerHTML = logs.map(log => `
+    <div class="timeline-item">
+      <div class="timeline-icon">${getActionIcon(log.Action)}</div>
+      <div class="timeline-content">
+        <div class="timeline-title">${escapeHtml(log.Description || '')}</div>
+        <div class="timeline-meta">
+          ${escapeHtml(log.User || '')} • ${formatDateTime(log.Timestamp)}
         </div>
-        <div class="timeline-content">
-          <div class="timeline-title">${escapeHtml(log.action || 'Action')}</div>
-          <div class="timeline-meta">
-            ${escapeHtml(log.user || 'Système')} • ${formatDateTime(log.timestamp)}
-          </div>
-          ${log.comment ? `<div class="timeline-comment">${escapeHtml(log.comment)}</div>` : ''}
-        </div>
+        ${log.Comment ? `<div class="timeline-comment">${escapeHtml(log.Comment)}</div>` : ''}
       </div>
-    `).join('')}
-  `;
+    </div>
+  `).join('');
 }
 
 function renderValidationActions(request, container) {
-  if (request.status !== 'pending') {
+  if (request.Status !== 'pending') {
     container.innerHTML = '';
     return;
   }
   
-  // Check if current user can validate
-  const canValidate = state.userRole === 'Owner' || state.userRole === 'Editor';
-  
-  if (!canValidate) {
-    container.innerHTML = '<p class="text-secondary">Vous n\'avez pas les droits pour valider cette demande</p>';
+  // Check if user can validate
+  if (state.userRole === 'Viewer') {
+    container.innerHTML = `<p class="no-permission">${t('noPermission')}</p>`;
     return;
   }
   
   container.innerHTML = `
-    <div class="validation-actions-section">
-      <h3>Actions de validation</h3>
+    <div class="validation-form">
+      <h3>${t('validationActions')}</h3>
       <div class="form-group">
-        <label for="validationComment">Commentaire (optionnel)</label>
-        <textarea id="validationComment" rows="3" class="form-control"></textarea>
+        <label for="validationComment">${t('comment')}</label>
+        <textarea id="validationComment" rows="3" placeholder="${t('comment')}..."></textarea>
       </div>
-      <div class="form-actions">
-        <button class="btn btn-danger" onclick="handleValidation('rejected')">
-          ❌ Rejeter
+      <div class="validation-buttons">
+        <button class="btn btn-danger" onclick="handleValidation('reject')">
+          ❌ ${t('reject')}
         </button>
-        <button class="btn btn-success" onclick="handleValidation('approved')">
-          ✅ Approuver
+        <button class="btn btn-success" onclick="handleValidation('approve')">
+          ✅ ${t('approve')}
         </button>
       </div>
     </div>
@@ -1233,32 +1221,38 @@ async function handleValidation(action) {
   try {
     showLoading(true);
     
+    const newStatus = action === 'approve' ? 'approved' : 'rejected';
+    
     // Update request status
     await grist.docApi.applyUserActions([
-      ['UpdateRecord', state.mappedColumns.Requests, request.id, {
-        status: action,
-        completed_at: new Date().toISOString()
+      ['UpdateRecord', REQUESTS_TABLE, request.id, {
+        Status: newStatus,
+        Completed_At: new Date().toISOString()
       }]
     ]);
     
-    // Log validation action
-    await logAction(action, `Demande ${action === 'approved' ? 'approuvée' : 'rejetée'}: ${request.title}`, {
-      request_id: request.id,
-      comment: comment
-    });
+    // Add validation log entry
+    await grist.docApi.applyUserActions([
+      ['AddRecord', VALIDATION_LOG_TABLE, null, {
+        Request_Id: request.id,
+        User: state.userEmail,
+        Action: action,
+        Description: `Demande ${action === 'approve' ? 'approuvée' : 'rejetée'}`,
+        Comment: comment
+      }]
+    ]);
+    
+    showSuccess(action === 'approve' ? t('requestApproved') : t('requestRejected'));
+    closeModal(document.getElementById('modalRequestDetails'));
     
     // Reload data
     await loadData();
     renderRequestsList();
     
-    closeModal(document.getElementById('modalRequestDetails'));
-    showLoading(false);
-    
-    showSuccess(`Demande ${action === 'approved' ? 'approuvée' : 'rejetée'} avec succès`);
-    
   } catch (error) {
     console.error('Error validating request:', error);
-    showError('Erreur lors de la validation');
+    showError(t('error'));
+  } finally {
     showLoading(false);
   }
 }
@@ -1267,12 +1261,11 @@ async function handleValidation(action) {
 async function logAction(action, description, details = {}) {
   try {
     await grist.docApi.applyUserActions([
-      ['AddRecord', state.mappedColumns.ValidationLog, null, {
-        user: state.userEmail,
-        action: action,
-        description: description,
-        timestamp: new Date().toISOString(),
-        details: JSON.stringify(details)
+      ['AddRecord', VALIDATION_LOG_TABLE, null, {
+        User: state.userEmail,
+        Action: action,
+        Description: description,
+        Details: JSON.stringify(details)
       }]
     ]);
   } catch (error) {
@@ -1363,17 +1356,7 @@ function showLoading(show) {
   }
 }
 
-function showError(message) {
-  alert('❌ ' + message);
-}
-
-function showSuccess(message) {
-  alert('✅ ' + message);
-}
-
 // Make functions globally accessible
 window.openRequestDetails = openRequestDetails;
 window.handleValidation = handleValidation;
-window.editWorkflowType = function(typeName) {
-  alert('Édition du workflow: ' + typeName + '\n(Fonctionnalité à venir)');
-};
+window.editWorkflowType = editWorkflowType;
