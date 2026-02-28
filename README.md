@@ -207,7 +207,6 @@ Licensed under the Apache License, Version 2.0
 
 - Documentation : [gristup.fr](https://gristup.fr)
 - GitHub : [isaytoo/grist-workflow-validator-widget](https://github.com/isaytoo/grist-workflow-validator-widget)
-- Support : contact@gristup.fr
 
 ## 🤝 Contribution
 

@@ -332,8 +332,7 @@ Assigner valideurs
 ### Liens
 - 🌐 Site : https://gristup.fr
 - 📖 GitHub : https://github.com/isaytoo/grist-workflow-validator-widget
-- 📧 Email : contact@gristup.fr
-- 💬 Forum : community.getgrist.com
+-  Forum : community.getgrist.com
 
 ### Démo live
 ```bash

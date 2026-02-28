@@ -329,7 +329,6 @@ Le widget est conçu pour être conforme RGPD :
 
 ### Contact
 
-- 📧 Email : contact@gristup.fr
 - 🌐 Site web : https://gristup.fr
 - 🐙 GitHub : https://github.com/isaytoo
 

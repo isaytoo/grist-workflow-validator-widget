@@ -235,6 +235,5 @@ INSERT INTO UserRoles (email, role, department) VALUES
 ## Support
 
 Pour plus d'exemples ou des questions :
-- 📧 contact@gristup.fr
 - 🌐 https://gristup.fr
 - 💬 Community Grist Forum
