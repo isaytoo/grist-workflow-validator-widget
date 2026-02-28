@@ -17,8 +17,12 @@
   <div id="app">
     <!-- Header -->
     <div class="header">
-      <h1>🔄 Workflow Validator</h1>
+      <h1>🔄 <span id="appTitle">Workflow Validator</span></h1>
       <div class="user-info">
+        <select id="langSelector" class="lang-selector">
+          <option value="en">🇬🇧 EN</option>
+          <option value="fr">🇫🇷 FR</option>
+        </select>
         <span id="userEmail" class="user-email"></span>
         <span id="userRole" class="user-role"></span>
       </div>

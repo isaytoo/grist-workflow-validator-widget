@@ -135,6 +135,50 @@ function t(key) {
   return i18n[currentLang][key] || key;
 }
 
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('wf-lang', lang);
+  updateUILanguage();
+}
+
+function updateUILanguage() {
+  // Update title
+  document.getElementById('appTitle').textContent = t('appTitle');
+  
+  // Update tabs
+  const tabs = document.querySelectorAll('.tab-btn');
+  if (tabs[0]) tabs[0].textContent = t('tabRequests');
+  if (tabs[1]) tabs[1].textContent = t('tabWorkflow');
+  if (tabs[2]) tabs[2].textContent = t('tabHistory');
+  if (tabs[3]) tabs[3].textContent = t('tabStats');
+  
+  // Update buttons
+  const btnNewRequest = document.getElementById('btnNewRequest');
+  if (btnNewRequest) {
+    btnNewRequest.innerHTML = `<span class="icon">➕</span> ${t('newRequest')}`;
+  }
+  
+  // Update filter labels
+  const filterStatus = document.getElementById('filterStatus');
+  if (filterStatus) {
+    filterStatus.innerHTML = `
+      <option value="">${t('allStatuses')}</option>
+      <option value="pending">${t('statusPending')}</option>
+      <option value="approved">${t('statusApproved')}</option>
+      <option value="rejected">${t('statusRejected')}</option>
+      <option value="cancelled">${t('statusCancelled')}</option>
+    `;
+  }
+  
+  const filterType = document.getElementById('filterType');
+  if (filterType) {
+    filterType.innerHTML = `<option value="">${t('allTypes')}</option>`;
+  }
+  
+  // Re-render current view
+  renderUI();
+}
+
 // Table names
 const REQUESTS_TABLE = 'WF_Requests';
 const WORKFLOW_STEPS_TABLE = 'WF_Steps';
@@ -165,6 +209,16 @@ const state = {
   try {
     console.log('Workflow Validator: Starting initialization...');
     
+    // Load saved language preference
+    const savedLang = localStorage.getItem('wf-lang') || 'en';
+    currentLang = savedLang;
+    document.getElementById('langSelector').value = savedLang;
+    
+    // Setup language selector
+    document.getElementById('langSelector').addEventListener('change', (e) => {
+      setLanguage(e.target.value);
+    });
+    
     await grist.ready({ requiredAccess: 'full' });
     
     console.log('Grist ready, starting auto-setup...');
@@ -176,6 +230,9 @@ const state = {
     
     // Initialize the widget
     await init();
+    
+    // Update UI with selected language
+    updateUILanguage();
     
     console.log('Widget initialized successfully!');
   } catch (error) {
