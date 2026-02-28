@@ -1122,7 +1122,209 @@ window.submitWorkflowName = async function() {
 }
 
 function editWorkflowType(typeName) {
-  showInfo(`Pour modifier le workflow "${typeName}", allez dans la table WF_Steps et modifiez les lignes correspondantes.`);
+  const workflow = state.workflowTypes.find(w => w.name === typeName);
+  if (!workflow) return;
+  
+  const sortedSteps = workflow.steps.sort((a, b) => a.Step_Number - b.Step_Number);
+  
+  const stepsHtml = sortedSteps.map(step => `
+    <div class="step-edit-card" data-step-id="${step.id}" style="background: var(--bg-secondary); padding: 16px; border-radius: 10px; margin-bottom: 12px; border-left: 4px solid var(--primary);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span style="background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">${step.Step_Number}</span>
+        <input type="text" value="${escapeHtml(step.Step_Name)}" class="form-control" data-field="Step_Name" style="flex: 1;" placeholder="Nom de l'étape">
+        <button onclick="deleteWorkflowStep(${step.id})" class="btn btn-danger" style="padding: 8px 12px;">🗑️</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Rôle du valideur</label>
+          <input type="text" value="${escapeHtml(step.Validator_Role || '')}" class="form-control" data-field="Validator_Role" placeholder="Ex: Manager">
+        </div>
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Email du valideur</label>
+          <input type="email" value="${escapeHtml(step.Validator_Email || '')}" class="form-control" data-field="Validator_Email" placeholder="email@example.com">
+        </div>
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">SLA (heures)</label>
+          <input type="number" value="${step.SLA_Hours || 48}" class="form-control" data-field="SLA_Hours" min="1">
+        </div>
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Type</label>
+          <select class="form-control" data-field="Is_Parallel">
+            <option value="false" ${!step.Is_Parallel ? 'selected' : ''}>➡️ Séquentiel</option>
+            <option value="true" ${step.Is_Parallel ? 'selected' : ''}>🔀 Parallèle</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Condition (optionnel)</label>
+        <input type="text" value="${escapeHtml(step.Condition || '')}" class="form-control" data-field="Condition" placeholder="Ex: amount > 1000">
+      </div>
+    </div>
+  `).join('');
+  
+  const modalHtml = `
+    <div id="modalEditWorkflow" class="modal active">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>✏️ Modifier le workflow "${escapeHtml(typeName)}"</h2>
+          <button class="modal-close" onclick="closeEditWorkflowModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom: 20px; padding: 12px; background: #dbeafe; border-radius: 8px; font-size: 0.9em;">
+            💡 Modifiez les étapes ci-dessous. Les changements seront sauvegardés dans la table WF_Steps.
+          </div>
+          
+          <div id="stepsEditContainer">
+            ${stepsHtml}
+          </div>
+          
+          <button onclick="addNewStep('${escapeHtml(typeName)}')" class="btn btn-secondary" style="width: 100%; margin-top: 12px;">
+            ➕ Ajouter une étape
+          </button>
+          
+          <div class="form-actions" style="margin-top: 24px;">
+            <button type="button" class="btn btn-secondary" onclick="closeEditWorkflowModal()">Annuler</button>
+            <button type="button" class="btn btn-primary" onclick="saveWorkflowChanges('${escapeHtml(typeName)}')">💾 Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = modalHtml;
+  document.body.appendChild(tempDiv.firstElementChild);
+}
+
+window.closeEditWorkflowModal = function() {
+  const modal = document.getElementById('modalEditWorkflow');
+  if (modal) modal.remove();
+}
+
+window.deleteWorkflowStep = function(stepId) {
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette étape ?')) return;
+  
+  const stepCard = document.querySelector(`[data-step-id="${stepId}"]`);
+  if (stepCard) {
+    stepCard.style.opacity = '0.5';
+    stepCard.dataset.deleted = 'true';
+  }
+}
+
+window.addNewStep = function(workflowName) {
+  const container = document.getElementById('stepsEditContainer');
+  const existingSteps = container.querySelectorAll('.step-edit-card:not([data-deleted="true"])');
+  const nextStepNumber = existingSteps.length + 1;
+  
+  const newStepHtml = `
+    <div class="step-edit-card" data-new="true" style="background: var(--bg-secondary); padding: 16px; border-radius: 10px; margin-bottom: 12px; border-left: 4px solid #10b981;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <span style="background: #10b981; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700;">${nextStepNumber}</span>
+        <input type="text" value="Nouvelle étape" class="form-control" data-field="Step_Name" style="flex: 1;" placeholder="Nom de l'étape">
+        <button onclick="this.parentElement.parentElement.remove()" class="btn btn-danger" style="padding: 8px 12px;">🗑️</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Rôle du valideur</label>
+          <input type="text" value="" class="form-control" data-field="Validator_Role" placeholder="Ex: Manager">
+        </div>
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Email du valideur</label>
+          <input type="email" value="" class="form-control" data-field="Validator_Email" placeholder="email@example.com">
+        </div>
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">SLA (heures)</label>
+          <input type="number" value="48" class="form-control" data-field="SLA_Hours" min="1">
+        </div>
+        <div>
+          <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Type</label>
+          <select class="form-control" data-field="Is_Parallel">
+            <option value="false" selected>➡️ Séquentiel</option>
+            <option value="true">🔀 Parallèle</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 12px;">
+        <label style="font-size: 0.85em; color: var(--text-secondary); margin-bottom: 4px; display: block;">Condition (optionnel)</label>
+        <input type="text" value="" class="form-control" data-field="Condition" placeholder="Ex: amount > 1000">
+      </div>
+      <input type="hidden" data-field="Workflow_Type" value="${escapeHtml(workflowName)}">
+      <input type="hidden" data-field="Step_Number" value="${nextStepNumber}">
+    </div>
+  `;
+  
+  container.insertAdjacentHTML('beforeend', newStepHtml);
+}
+
+window.saveWorkflowChanges = async function(workflowName) {
+  try {
+    showLoading(true);
+    
+    const actions = [];
+    const container = document.getElementById('stepsEditContainer');
+    const stepCards = container.querySelectorAll('.step-edit-card');
+    
+    stepCards.forEach((card, index) => {
+      const stepId = card.dataset.stepId;
+      const isNew = card.dataset.new === 'true';
+      const isDeleted = card.dataset.deleted === 'true';
+      
+      if (isDeleted && stepId) {
+        // Delete step
+        actions.push(['RemoveRecord', WORKFLOW_STEPS_TABLE, parseInt(stepId)]);
+      } else if (isNew) {
+        // Add new step
+        const data = {};
+        card.querySelectorAll('[data-field]').forEach(input => {
+          const field = input.dataset.field;
+          let value = input.value;
+          
+          if (field === 'SLA_Hours') value = parseInt(value) || 48;
+          else if (field === 'Is_Parallel') value = value === 'true';
+          else if (field === 'Step_Number') value = parseInt(value);
+          
+          data[field] = value;
+        });
+        
+        actions.push(['AddRecord', WORKFLOW_STEPS_TABLE, null, data]);
+      } else if (stepId) {
+        // Update existing step
+        const data = {};
+        card.querySelectorAll('[data-field]').forEach(input => {
+          const field = input.dataset.field;
+          let value = input.value;
+          
+          if (field === 'SLA_Hours') value = parseInt(value) || 48;
+          else if (field === 'Is_Parallel') value = value === 'true';
+          
+          data[field] = value;
+        });
+        
+        // Update step number based on position
+        data.Step_Number = index + 1;
+        
+        actions.push(['UpdateRecord', WORKFLOW_STEPS_TABLE, parseInt(stepId), data]);
+      }
+    });
+    
+    if (actions.length > 0) {
+      await grist.docApi.applyUserActions(actions);
+      showSuccess('Workflow mis à jour avec succès !');
+      
+      // Reload and refresh
+      await loadData();
+      renderWorkflowConfig();
+      closeEditWorkflowModal();
+    } else {
+      showInfo('Aucune modification à sauvegarder');
+    }
+    
+  } catch (error) {
+    console.error('Error saving workflow:', error);
+    showError('Erreur lors de la sauvegarde du workflow');
+  } finally {
+    showLoading(false);
+  }
 }
 
 window.viewWorkflowSteps = function(typeName) {
